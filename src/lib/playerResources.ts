@@ -9,6 +9,11 @@ export interface PlayerResources {
   // Free continue tracking (one-time only)
   hasUsedFreeContinue: boolean;
   
+  // Settings
+  soundEnabled: boolean;
+  musicEnabled: boolean;
+  tutorialCompleted: boolean;
+  
   // Tracking
   totalGamesPlayed: number;
   totalSessionsToday: number;
@@ -29,6 +34,11 @@ const INITIAL_RESOURCES: PlayerResources = {
   clearCells: 1,
   
   hasUsedFreeContinue: false,
+  
+  // Settings defaults
+  soundEnabled: true,
+  musicEnabled: true,
+  tutorialCompleted: false,
   
   totalGamesPlayed: 0,
   totalSessionsToday: 0,
@@ -192,7 +202,7 @@ export function checkUndoAvailability(
       canUndo: false,
       isFree: false,
       hasPaidUndo: false,
-      reason: 'Não pode desfazer após limpar linhas',
+      reason: 'Cannot undo after clearing lines',
     };
   }
   
@@ -202,7 +212,7 @@ export function checkUndoAvailability(
       canUndo: true,
       isFree: true,
       hasPaidUndo: resources.undos > 0,
-      reason: 'Desfazer grátis',
+      reason: 'Free undo',
     };
   }
   
@@ -212,7 +222,7 @@ export function checkUndoAvailability(
       canUndo: true,
       isFree: false,
       hasPaidUndo: true,
-      reason: `${resources.undos} restantes`,
+      reason: `${resources.undos} remaining`,
     };
   }
   
@@ -220,7 +230,7 @@ export function checkUndoAvailability(
     canUndo: false,
     isFree: false,
     hasPaidUndo: false,
-    reason: 'Sem undos disponíveis',
+    reason: 'No undos available',
   };
 }
 

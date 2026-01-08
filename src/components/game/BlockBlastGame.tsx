@@ -2,7 +2,8 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import GameBoard from './GameBoard';
 import PieceTray from './PieceTray';
-import AnimatedScore from './AnimatedScore';
+import GameHUD from './GameHUD';
+import SettingsModal from './SettingsModal';
 import GameOverModal from './GameOverModal';
 import ContinueModal from './ContinueModal';
 import UndoButton from './UndoButton';
@@ -116,6 +117,7 @@ const BlockBlastGame: React.FC = () => {
     return startNewGame(resources);
   });
   const [showContinueModal, setShowContinueModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [lastMoveHadClear, setLastMoveHadClear] = useState(false);
   
   // History for undo
@@ -610,20 +612,14 @@ const BlockBlastGame: React.FC = () => {
           paddingRight: 'max(env(safe-area-inset-right), 12px)',
         }}
       >
-        {/* Header - Score & Undo */}
-        <div className="flex-shrink-0 pt-2 w-full max-w-md px-4">
-          <div className="flex items-center justify-between">
-            <div className="w-14" /> {/* Spacer for balance */}
-            <AnimatedScore score={gameState.score} combo={gameState.combo} />
-            {!tutorial.isActive && (
-              <UndoButton
-                availability={undoAvailability}
-                onUndo={handleUndo}
-                onBuyUndo={handleBuyUndo}
-              />
-            )}
-            {tutorial.isActive && <div className="w-14" />}
-          </div>
+        {/* Header - HUD with Best Score, Current Score, Settings */}
+        <div className="flex-shrink-0 pt-2">
+          <GameHUD
+            currentScore={gameState.score}
+            bestScore={playerResources.highScore}
+            combo={gameState.combo}
+            onOpenSettings={() => setShowSettingsModal(true)}
+          />
         </div>
         
         {/* Board - Center, fills available space */}
@@ -641,6 +637,17 @@ const BlockBlastGame: React.FC = () => {
           </div>
         </div>
         
+        {/* Undo Button - Above piece tray, centered */}
+        {!tutorial.isActive && (
+          <div className="flex-shrink-0 flex justify-center pb-2">
+            <UndoButton
+              availability={undoAvailability}
+              onUndo={handleUndo}
+              onBuyUndo={handleBuyUndo}
+            />
+          </div>
+        )}
+        
         {/* Piece Tray - Bottom, fixed height */}
         <div className={cn(
           "flex-shrink-0 w-full pb-2",
@@ -653,6 +660,20 @@ const BlockBlastGame: React.FC = () => {
             onDrag={handleDrag}
           />
         </div>
+        
+        {/* Settings Modal */}
+        <SettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          soundEnabled={playerResources.soundEnabled}
+          musicEnabled={playerResources.musicEnabled}
+          onToggleSound={() => setPlayerResources(prev => ({ ...prev, soundEnabled: !prev.soundEnabled }))}
+          onToggleMusic={() => setPlayerResources(prev => ({ ...prev, musicEnabled: !prev.musicEnabled }))}
+          onRestorePurchases={() => {
+            // TODO: Implement restore purchases
+            triggerHaptic('success');
+          }}
+        />
         
         {/* Continue Modal */}
         <ContinueModal
@@ -672,7 +693,7 @@ const BlockBlastGame: React.FC = () => {
         />
         
         {isGameOver && (
-          <GameOverModal score={gameState.score} onRestart={handleRestart} />
+          <GameOverModal score={gameState.score} highScore={playerResources.highScore} onRestart={handleRestart} />
         )}
       </div>
     </>
