@@ -14,6 +14,7 @@ interface GameBoardProps {
   grid: Grid;
   ghostPosition: GhostPosition | null;
   clearingCells: Set<string>;
+  tutorialTargetCells?: Set<string> | null;
   onCellDrop: (x: number, y: number) => void;
   onCellHover: (x: number, y: number) => void;
   onCellLeave: () => void;
@@ -23,6 +24,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   grid,
   ghostPosition,
   clearingCells,
+  tutorialTargetCells,
   onCellDrop,
   onCellHover,
   onCellLeave,
@@ -58,13 +60,15 @@ const GameBoard: React.FC<GameBoardProps> = ({
             const key = `${x}-${y}`;
             const isClearing = clearingCells.has(key);
             const showGhost = isGhostCell(x, y) && cell === 0;
+            const isTutorialTarget = tutorialTargetCells?.has(key) ?? false;
 
             return (
               <div
                 key={key}
                 className={cn(
                   'grid-cell flex items-center justify-center',
-                  isClearing && 'clearing'
+                  isClearing && 'clearing',
+                  isTutorialTarget && 'tutorial-target-cell'
                 )}
                 style={{ width: cellSize, height: cellSize }}
                 onMouseUp={() => onCellDrop(x, y)}

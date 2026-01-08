@@ -8,8 +8,10 @@ import ContinueModal from './ContinueModal';
 import UndoButton from './UndoButton';
 import FeedbackText from './FeedbackText';
 import ParticleEffect from './ParticleEffect';
+import TutorialOverlay from './TutorialOverlay';
 import {
   createInitialState,
+  createEmptyGrid,
   placePiece,
   canPlace,
   anyMoveAvailable,
@@ -42,6 +44,14 @@ import {
   updateHighScore,
   type PlayerResources,
 } from '@/lib/playerResources';
+import {
+  createTutorialState,
+  createTutorialGrid,
+  getTutorialPiece,
+  advanceTutorial,
+  isValidTutorialDrop,
+  type TutorialState,
+} from '@/lib/tutorial';
 
 // Convert RNG piece to GamePiece format
 interface GamePiece {
@@ -94,6 +104,9 @@ interface GhostState {
 }
 
 const BlockBlastGame: React.FC = () => {
+  // ========== TUTORIAL STATE ==========
+  const [tutorial, setTutorial] = useState<TutorialState>(createTutorialState);
+  
   // ========== RNG STATE ==========
   const rngStateRef = useRef<RngState>(createInitialRngState());
   
@@ -124,11 +137,29 @@ const BlockBlastGame: React.FC = () => {
   }, []);
 
   // ========== GAME STATE (logical) ==========
-  const [gameState, setGameState] = useState<EngineState>(createInitialState);
+  // Initialize with tutorial grid if in tutorial mode
+  const [gameState, setGameState] = useState<EngineState>(() => {
+    if (createTutorialState().isActive) {
+      return {
+        grid: createTutorialGrid(),
+        score: 0,
+        combo: 0,
+        movesSinceClear: 0,
+      };
+    }
+    return createInitialState();
+  });
+  
+  // Initialize with tutorial piece or normal pieces
   const [pieces, setPieces] = useState<(GamePiece | null)[]>(() => {
+    if (createTutorialState().isActive) {
+      const tutorialPiece = getTutorialPiece();
+      return [tutorialPiece, null, null]; // Only one piece for tutorial
+    }
     const initialState = createInitialState();
     return generatePiecesWithRng(initialState);
   });
+  
   const [isGameOver, setIsGameOver] = useState(false);
   const [clearingCells, setClearingCells] = useState<Set<string>>(new Set());
   const [screenShake, setScreenShake] = useState(false);
@@ -167,12 +198,17 @@ const BlockBlastGame: React.FC = () => {
 
   // ========== DRAG HANDLERS ==========
   const handleDragStart = useCallback((piece: GamePiece, _element: HTMLElement) => {
+    // Advance tutorial when piece is picked
+    if (tutorial.isActive && tutorial.currentStep === 'pick-piece') {
+      setTutorial(advanceTutorial);
+    }
+    
     setDragState({
       piece,
       pixelX: 0,
       pixelY: 0,
     });
-  }, []);
+  }, [tutorial]);
 
   // handleDrag receives the BLOCK position (already offset from finger by DraggablePiece)
   const handleDrag = useCallback((blockX: number, blockY: number) => {
@@ -233,23 +269,33 @@ const BlockBlastGame: React.FC = () => {
     const piece = dragState.piece;
     
     // STRICT: Only place if canPlace returns true
-    // This is the SAME check used for ghost preview
     if (!isValid) {
-      // Invalid placement - snap back with error feedback
       triggerHaptic('light');
       setDragState(null);
       setGhostState(null);
       return;
     }
     
-    // Save state for undo BEFORE placing
-    historyRef.current.push({
-      state: { ...gameState },
-      pieces: [...pieces],
-    });
-    // Keep only last 3 states
-    if (historyRef.current.length > 3) {
-      historyRef.current.shift();
+    // Tutorial: Check if drop is at target position
+    if (tutorial.isActive && tutorial.currentStep === 'drop-piece') {
+      if (!isValidTutorialDrop(tutorial, gridX, gridY)) {
+        // Wrong position in tutorial - snap back with gentle feedback
+        triggerHaptic('light');
+        setDragState(null);
+        setGhostState(null);
+        return;
+      }
+    }
+    
+    // Save state for undo BEFORE placing (skip in tutorial)
+    if (!tutorial.isActive) {
+      historyRef.current.push({
+        state: { ...gameState },
+        pieces: [...pieces],
+      });
+      if (historyRef.current.length > 3) {
+        historyRef.current.shift();
+      }
     }
     
     try {
@@ -261,11 +307,14 @@ const BlockBlastGame: React.FC = () => {
         piece.colorId
       );
       
-      // Track if this move had a clear
       const hadClear = result.clear.linesCleared > 0;
       setLastMoveHadClear(hadClear);
       
-      // Success! Handle line clears with animation and feedback
+      // Tutorial: Advance to reward step after successful drop
+      if (tutorial.isActive && tutorial.currentStep === 'drop-piece') {
+        setTutorial(advanceTutorial); // -> 'reward'
+      }
+      
       if (hadClear) {
         const cellsToAnimate = new Set<string>();
         result.clear.clearedRows.forEach(row => {
@@ -280,11 +329,12 @@ const BlockBlastGame: React.FC = () => {
         });
         setClearingCells(cellsToAnimate);
         
-        // Trigger feedback
-        const clearMsg = getClearMessage(result.clear.linesCleared);
-        setFeedbackMessage(clearMsg);
+        // Skip normal feedback in tutorial - the overlay handles it
+        if (!tutorial.isActive) {
+          const clearMsg = getClearMessage(result.clear.linesCleared);
+          setFeedbackMessage(clearMsg);
+        }
         
-        // Particles at board center
         const metrics = getBoardMetrics();
         if (metrics) {
           setParticleTrigger({
@@ -294,10 +344,8 @@ const BlockBlastGame: React.FC = () => {
           });
         }
         
-        // Haptic feedback
         triggerHaptic(result.clear.linesCleared >= 2 ? 'heavy' : 'medium');
         
-        // Screen shake for big clears
         if (result.clear.linesCleared >= 2) {
           setScreenShake(true);
           setTimeout(() => setScreenShake(false), 300);
@@ -306,14 +354,14 @@ const BlockBlastGame: React.FC = () => {
         setTimeout(() => {
           setClearingCells(new Set());
           
-          // Show combo message after clear message
-          const comboMsg = getComboMessage(result.next.combo);
-          if (comboMsg) {
-            setTimeout(() => setFeedbackMessage(comboMsg), 300);
+          if (!tutorial.isActive) {
+            const comboMsg = getComboMessage(result.next.combo);
+            if (comboMsg) {
+              setTimeout(() => setFeedbackMessage(comboMsg), 300);
+            }
           }
         }, 300);
       } else {
-        // Light haptic for placement without clear
         triggerHaptic('light');
       }
       
@@ -324,14 +372,15 @@ const BlockBlastGame: React.FC = () => {
         p?.id === piece.id ? null : p
       );
       
-      // Check if all pieces used
       const remainingPieces = newPieces.filter(p => p !== null);
       
-      if (remainingPieces.length === 0) {
+      // Tutorial: Don't generate new pieces, just wait for tutorial to end
+      if (tutorial.isActive) {
+        setPieces(newPieces);
+      } else if (remainingPieces.length === 0) {
         const freshPieces = generatePiecesWithRng(result.next);
         setPieces(freshPieces);
         
-        // Check game over with new pieces
         setTimeout(() => {
           if (checkGameOver(result.next, freshPieces)) {
             handleGameOver(result.next);
@@ -340,20 +389,17 @@ const BlockBlastGame: React.FC = () => {
       } else {
         setPieces(newPieces);
         
-        // Check game over with remaining pieces
         if (checkGameOver(result.next, newPieces)) {
           handleGameOver(result.next);
         }
       }
     } catch (e) {
-      // This should NEVER happen if canPlace logic is correct
       console.error('CRITICAL: Placement failed after canPlace returned true:', e);
     }
     
-    // Clear drag state
     setDragState(null);
     setGhostState(null);
-  }, [dragState, ghostState, gameState, pieces, checkGameOver, getBoardMetrics, generatePiecesWithRng]);
+  }, [dragState, ghostState, gameState, pieces, tutorial, checkGameOver, getBoardMetrics, generatePiecesWithRng]);
 
   // ========== GAME OVER FLOW ==========
   const handleGameOver = useCallback((finalState: EngineState) => {
@@ -483,6 +529,35 @@ const BlockBlastGame: React.FC = () => {
     isValid: ghostState.isValid,
   } : null;
 
+  // ========== TUTORIAL COMPLETION ==========
+  const handleTutorialAdvance = useCallback(() => {
+    setTutorial(prev => {
+      const next = advanceTutorial(prev);
+      
+      // When tutorial completes, start normal game
+      if (next.currentStep === 'done' && prev.currentStep === 'complete') {
+        // Reset to normal game state
+        setTimeout(() => {
+          const freshState = createInitialState();
+          setGameState(freshState);
+          setPieces(generatePiecesWithRng(freshState));
+        }, 100);
+      }
+      
+      return next;
+    });
+  }, [generatePiecesWithRng]);
+
+  // Determine if tutorial piece should be highlighted
+  const isTutorialPieceHighlighted = tutorial.isActive && tutorial.currentStep === 'pick-piece';
+  
+  // Determine tutorial target cells for grid highlighting
+  const tutorialTargetCells = tutorial.isActive && tutorial.currentStep === 'drop-piece' && tutorial.targetGridPosition
+    ? new Set([`${tutorial.targetGridPosition.x}-${tutorial.targetGridPosition.y}`, 
+               `${tutorial.targetGridPosition.x + 1}-${tutorial.targetGridPosition.y}`,
+               `${tutorial.targetGridPosition.x + 2}-${tutorial.targetGridPosition.y}`])
+    : null;
+
   return (
     <>
       {/* Particle effects layer */}
@@ -493,6 +568,15 @@ const BlockBlastGame: React.FC = () => {
         message={feedbackMessage} 
         onComplete={() => setFeedbackMessage(null)} 
       />
+      
+      {/* Tutorial overlay */}
+      {tutorial.isActive && (
+        <TutorialOverlay
+          step={tutorial.currentStep}
+          targetPosition={tutorial.targetGridPosition ?? undefined}
+          onRewardComplete={handleTutorialAdvance}
+        />
+      )}
       
       <div 
         className={cn(
@@ -511,11 +595,14 @@ const BlockBlastGame: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="w-14" /> {/* Spacer for balance */}
             <AnimatedScore score={gameState.score} combo={gameState.combo} />
-            <UndoButton
-              availability={undoAvailability}
-              onUndo={handleUndo}
-              onBuyUndo={handleBuyUndo}
-            />
+            {!tutorial.isActive && (
+              <UndoButton
+                availability={undoAvailability}
+                onUndo={handleUndo}
+                onBuyUndo={handleBuyUndo}
+              />
+            )}
+            {tutorial.isActive && <div className="w-14" />}
           </div>
         </div>
         
@@ -526,6 +613,7 @@ const BlockBlastGame: React.FC = () => {
               grid={gameState.grid}
               ghostPosition={ghostPosition}
               clearingCells={clearingCells}
+              tutorialTargetCells={tutorialTargetCells}
               onCellDrop={handleCellDrop}
               onCellHover={handleCellHover}
               onCellLeave={handleCellLeave}
@@ -534,7 +622,10 @@ const BlockBlastGame: React.FC = () => {
         </div>
         
         {/* Piece Tray - Bottom, fixed height */}
-        <div className="flex-shrink-0 w-full pb-2">
+        <div className={cn(
+          "flex-shrink-0 w-full pb-2",
+          isTutorialPieceHighlighted && "tutorial-piece-highlight"
+        )}>
           <PieceTray
             pieces={pieces}
             onDragStart={handleDragStart}
