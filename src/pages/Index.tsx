@@ -14,7 +14,7 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Game takes all available space */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <BlockBlastGame />

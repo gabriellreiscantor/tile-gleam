@@ -53,7 +53,7 @@ import {
   isValidTutorialDrop,
   type TutorialState,
 } from '@/lib/tutorial';
-import { preloadSounds, sounds, setBGMEnabled } from '@/lib/sounds';
+import { preloadSounds, sounds } from '@/lib/sounds';
 
 // Convert RNG piece to GamePiece format
 interface GamePiece {
@@ -128,11 +128,6 @@ const BlockBlastGame: React.FC = () => {
   useEffect(() => {
     preloadSounds();
   }, []);
-  
-  // Sync BGM with music toggle
-  useEffect(() => {
-    setBGMEnabled(playerResources.musicEnabled);
-  }, [playerResources.musicEnabled]);
   
   // Save resources on change
   useEffect(() => {

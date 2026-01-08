@@ -19,17 +19,10 @@ const SOUND_URLS = {
   error: 'https://cdn.freesound.org/previews/142/142608_1840739-lq.mp3',
 } as const;
 
-// Background music - chill lofi style loop
-const BGM_URL = 'https://cdn.freesound.org/previews/612/612095_5674468-lq.mp3';
-
 type SoundType = keyof typeof SOUND_URLS;
 
 // Audio cache to avoid re-downloading
 const audioCache = new Map<SoundType, HTMLAudioElement>();
-
-// Background music instance
-let bgmAudio: HTMLAudioElement | null = null;
-let bgmEnabled = false;
 
 // Preload all sounds
 export function preloadSounds(): void {
@@ -39,12 +32,6 @@ export function preloadSounds(): void {
     audio.volume = 0.5;
     audioCache.set(key as SoundType, audio);
   });
-  
-  // Preload BGM
-  bgmAudio = new Audio(BGM_URL);
-  bgmAudio.preload = 'auto';
-  bgmAudio.loop = true;
-  bgmAudio.volume = 0.3;
 }
 
 // Play a sound effect
@@ -74,40 +61,6 @@ export function playSoundIfEnabled(type: SoundType, soundEnabled: boolean, volum
   if (soundEnabled) {
     playSound(type, volume);
   }
-}
-
-// Background music controls
-export function startBGM(): void {
-  if (!bgmAudio) {
-    bgmAudio = new Audio(BGM_URL);
-    bgmAudio.loop = true;
-    bgmAudio.volume = 0.3;
-  }
-  
-  bgmEnabled = true;
-  bgmAudio.play().catch(e => {
-    console.debug('BGM play failed (needs user interaction):', e);
-  });
-}
-
-export function stopBGM(): void {
-  bgmEnabled = false;
-  if (bgmAudio) {
-    bgmAudio.pause();
-    bgmAudio.currentTime = 0;
-  }
-}
-
-export function setBGMEnabled(enabled: boolean): void {
-  if (enabled && !bgmEnabled) {
-    startBGM();
-  } else if (!enabled && bgmEnabled) {
-    stopBGM();
-  }
-}
-
-export function isBGMPlaying(): boolean {
-  return bgmEnabled && bgmAudio !== null && !bgmAudio.paused;
 }
 
 // Shorthand functions for common sounds

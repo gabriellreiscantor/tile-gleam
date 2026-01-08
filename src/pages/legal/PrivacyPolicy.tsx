@@ -27,7 +27,7 @@ const PrivacyPolicyPage: React.FC<PrivacyPolicyPageProps> = ({ onBack }) => {
           <h3 className="font-bold text-white mb-2">Overview</h3>
           <p>
             This Privacy Policy explains how we collect, use, and protect your information when you use Block Puzzle. 
-            Your privacy is very important to us.
+            Your privacy is important to us.
           </p>
         </section>
 
