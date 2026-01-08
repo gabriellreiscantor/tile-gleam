@@ -77,26 +77,51 @@ const Debug: React.FC = () => {
 
       {/* Combo Messages */}
       <Section title="🔥 COMBO MESSAGES">
-        <div className="grid grid-cols-3 gap-2 justify-items-center">
-          {[2, 3, 4, 5, 6].map((c) => {
-            const msg = getComboMessage(c);
-            return (
-              <Button
-                key={c}
-                variant="outline"
-                className="w-24"
-                onClick={() => {
-                  if (msg) {
-                    showFeedback(msg);
-                    setCombo(c);
-                  }
-                }}
-              >
-                x{c} Combo
-              </Button>
-            );
-          })}
-          <Button variant="ghost" size="sm" className="w-24" onClick={() => setCombo(0)}>
+        <div className="flex flex-col items-center gap-2">
+          {/* Linha 1: x2, x3, x4 */}
+          <div className="flex gap-2 justify-center">
+            {[2, 3, 4].map((c) => {
+              const msg = getComboMessage(c);
+              return (
+                <Button
+                  key={c}
+                  variant="outline"
+                  className="w-24"
+                  onClick={() => {
+                    if (msg) {
+                      showFeedback(msg);
+                      setCombo(c);
+                    }
+                  }}
+                >
+                  x{c} Combo
+                </Button>
+              );
+            })}
+          </div>
+          {/* Linha 2: x5, x6 */}
+          <div className="flex gap-2 justify-center">
+            {[5, 6].map((c) => {
+              const msg = getComboMessage(c);
+              return (
+                <Button
+                  key={c}
+                  variant="outline"
+                  className="w-24"
+                  onClick={() => {
+                    if (msg) {
+                      showFeedback(msg);
+                      setCombo(c);
+                    }
+                  }}
+                >
+                  x{c} Combo
+                </Button>
+              );
+            })}
+          </div>
+          {/* Reset */}
+          <Button variant="ghost" size="sm" onClick={() => setCombo(0)}>
             Reset Combo
           </Button>
         </div>
