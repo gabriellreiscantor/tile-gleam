@@ -1,6 +1,11 @@
 import React from 'react';
 import DraggablePiece from './DraggablePiece';
-import type { GamePiece } from '@/lib/pieces';
+
+interface GamePiece {
+  shape: number[][];
+  colorId: number;
+  id: string;
+}
 
 interface PieceTrayProps {
   pieces: (GamePiece | null)[];
@@ -16,10 +21,14 @@ const PieceTray: React.FC<PieceTrayProps> = ({
   onDrag,
 }) => {
   return (
-    <div className="piece-tray w-full max-w-md mx-auto">
-      <div className="flex items-center justify-evenly gap-1">
+    <div className="piece-tray w-full max-w-[360px] mx-auto">
+      {/* Piece slots with generous spacing */}
+      <div className="flex items-center justify-between gap-3 px-1">
         {pieces.map((piece, index) => (
-          <div key={piece?.id ?? `empty-${index}`} className="flex items-center justify-center min-w-16 min-h-16">
+          <div 
+            key={piece?.id ?? `empty-${index}`} 
+            className="piece-slot flex-1"
+          >
             {piece && (
               <DraggablePiece
                 piece={piece}
