@@ -640,7 +640,7 @@ const BlockBlastGame: React.FC = () => {
         
         {/* Undo Button - Above piece tray, centered */}
         {!tutorial.isActive && (
-          <div className="flex-shrink-0 flex justify-center pb-2">
+          <div className="flex-shrink-0 flex justify-center pb-4 -mt-2">
             <UndoButton
               availability={undoAvailability}
               onUndo={handleUndo}
