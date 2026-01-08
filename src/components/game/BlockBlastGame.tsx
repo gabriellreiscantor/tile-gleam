@@ -53,7 +53,7 @@ import {
   isValidTutorialDrop,
   type TutorialState,
 } from '@/lib/tutorial';
-import { preloadSounds, sounds, playBGM, stopBGM, setBGMEnabled } from '@/lib/sounds';
+import { preloadSounds, sounds, playBGM, stopBGM, setBGMEnabled, unlockAudioContext } from '@/lib/sounds';
 
 // Convert RNG piece to GamePiece format
 interface GamePiece {
@@ -131,8 +131,11 @@ const BlockBlastGame: React.FC = () => {
   useEffect(() => {
     preloadSounds();
     
-    // Mark interaction and try to start BGM
+    // Unlock audio and start BGM on first interaction (CRITICAL for iOS!)
     const handleInteraction = () => {
+      // Always try to unlock AudioContext on every interaction
+      unlockAudioContext();
+      
       if (!hasInteractedRef.current) {
         hasInteractedRef.current = true;
         // Try to start BGM immediately after interaction
@@ -140,13 +143,16 @@ const BlockBlastGame: React.FC = () => {
       }
     };
     
+    // Use passive: false for touchstart to ensure it fires reliably on iOS
     document.addEventListener('click', handleInteraction);
-    document.addEventListener('touchstart', handleInteraction);
+    document.addEventListener('touchstart', handleInteraction, { passive: true });
+    document.addEventListener('touchend', handleInteraction, { passive: true });
     
     return () => {
       stopBGM();
       document.removeEventListener('click', handleInteraction);
       document.removeEventListener('touchstart', handleInteraction);
+      document.removeEventListener('touchend', handleInteraction);
     };
   }, [playerResources.musicEnabled]);
   
