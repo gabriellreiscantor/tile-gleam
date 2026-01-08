@@ -53,6 +53,7 @@ import {
   isValidTutorialDrop,
   type TutorialState,
 } from '@/lib/tutorial';
+import { preloadSounds, sounds } from '@/lib/sounds';
 
 // Convert RNG piece to GamePiece format
 interface GamePiece {
@@ -122,6 +123,11 @@ const BlockBlastGame: React.FC = () => {
   
   // History for undo
   const historyRef = useRef<{ state: EngineState; pieces: (GamePiece | null)[] }[]>([]);
+  
+  // Preload sounds on mount
+  useEffect(() => {
+    preloadSounds();
+  }, []);
   
   // Save resources on change
   useEffect(() => {
@@ -283,6 +289,7 @@ const BlockBlastGame: React.FC = () => {
     // STRICT: Only place if canPlace returns true
     if (!isValid) {
       triggerHaptic('light');
+      sounds.error(playerResources.soundEnabled);
       setDragState(null);
       setGhostState(null);
       return;
@@ -345,6 +352,13 @@ const BlockBlastGame: React.FC = () => {
         if (!tutorial.isActive) {
           const clearMsg = getClearMessage(result.clear.linesCleared);
           showFeedback(clearMsg);
+          
+          // Play clear/combo sound
+          if (result.next.combo > 1) {
+            sounds.combo(playerResources.soundEnabled);
+          } else {
+            sounds.clear(playerResources.soundEnabled);
+          }
         }
         
         const metrics = getBoardMetrics();
@@ -375,6 +389,7 @@ const BlockBlastGame: React.FC = () => {
         }, 300);
       } else {
         triggerHaptic('light');
+        sounds.drop(playerResources.soundEnabled);
       }
       
       setGameState(result.next);
@@ -432,6 +447,7 @@ const BlockBlastGame: React.FC = () => {
     } else {
       // Direct game over
       rngOnGameOver(rngStateRef.current);
+      sounds.gameOver(playerResources.soundEnabled);
       setIsGameOver(true);
     }
   }, [playerResources]);
@@ -442,8 +458,9 @@ const BlockBlastGame: React.FC = () => {
     const freshPieces = generatePiecesWithRng(gameState);
     setPieces(freshPieces);
     triggerHaptic('success');
+    sounds.success(playerResources.soundEnabled);
     showFeedback({ text: 'CONTINUE!', emoji: '🎁', intensity: 'high', color: 'green' });
-  }, [gameState, generatePiecesWithRng]);
+  }, [gameState, generatePiecesWithRng, playerResources.soundEnabled]);
 
   const handleContinuePaid = useCallback(() => {
     setPlayerResources(prev => useContinue(prev, 'paid'));
@@ -452,8 +469,9 @@ const BlockBlastGame: React.FC = () => {
     const freshPieces = generatePiecesWithRng(gameState);
     setPieces(freshPieces);
     triggerHaptic('success');
+    sounds.success(playerResources.soundEnabled);
     showFeedback({ text: 'CONTINUE!', emoji: '🔁', intensity: 'high', color: 'green' });
-  }, [gameState, generatePiecesWithRng]);
+  }, [gameState, generatePiecesWithRng, playerResources.soundEnabled]);
 
   const handleContinueAd = useCallback(() => {
     // In real app, show rewarded ad here
@@ -463,14 +481,16 @@ const BlockBlastGame: React.FC = () => {
     const freshPieces = generatePiecesWithRng(gameState);
     setPieces(freshPieces);
     triggerHaptic('success');
+    sounds.success(playerResources.soundEnabled);
     showFeedback({ text: 'CONTINUE!', emoji: '🎬', intensity: 'high', color: 'green' });
-  }, [gameState, generatePiecesWithRng]);
+  }, [gameState, generatePiecesWithRng, playerResources.soundEnabled]);
 
   const handleDeclineContinue = useCallback(() => {
     setShowContinueModal(false);
     rngOnGameOver(rngStateRef.current);
+    sounds.gameOver(playerResources.soundEnabled);
     setIsGameOver(true);
-  }, []);
+  }, [playerResources.soundEnabled]);
 
   // ========== UNDO ==========
   const undoAvailability = checkUndoAvailability(playerResources, lastMoveHadClear);
@@ -484,8 +504,9 @@ const BlockBlastGame: React.FC = () => {
     setPlayerResources(prev => useUndo(prev));
     setLastMoveHadClear(false);
     triggerHaptic('medium');
+    sounds.click(playerResources.soundEnabled);
     showFeedback({ text: 'UNDO!', emoji: '↩️', intensity: 'medium', color: 'cyan' });
-  }, []);
+  }, [playerResources.soundEnabled]);
 
   const handleBuyUndo = useCallback(() => {
     // In real app, show IAP purchase flow
