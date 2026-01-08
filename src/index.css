@@ -161,9 +161,10 @@ html, body {
   .tile-7 { background: hsl(var(--tile-purple)); }
   .tile-8 { background: hsl(var(--tile-pink)); }
 
-  /* Ghost preview */
+  /* Ghost preview - valid placement */
   .ghost-tile {
-    @apply rounded-lg opacity-40;
+    @apply rounded-lg transition-all duration-100;
+    opacity: 0.5;
   }
 
   .ghost-tile.tile-1 { background: hsl(var(--tile-red) / 0.5); }
@@ -174,6 +175,13 @@ html, body {
   .ghost-tile.tile-6 { background: hsl(var(--tile-blue) / 0.5); }
   .ghost-tile.tile-7 { background: hsl(var(--tile-purple) / 0.5); }
   .ghost-tile.tile-8 { background: hsl(var(--tile-pink) / 0.5); }
+
+  /* Ghost preview - INVALID placement (red) */
+  .ghost-tile.ghost-invalid {
+    background: hsl(0 70% 50% / 0.4) !important;
+    border: 2px dashed hsl(0 70% 40%);
+    opacity: 0.6;
+  }
 
   /* Piece selector area */
   .piece-tray {

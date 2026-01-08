@@ -1,10 +1,18 @@
 import React from 'react';
-import { GRID_SIZE, type Grid, type Piece, canPlace } from '@/lib/gameEngine';
+import { GRID_SIZE, type Grid, type Piece } from '@/lib/gameEngine';
 import { cn } from '@/lib/utils';
+
+interface GhostPosition {
+  x: number;
+  y: number;
+  piece: Piece;
+  colorId: number;
+  isValid?: boolean; // true = green/valid, false = red/invalid
+}
 
 interface GameBoardProps {
   grid: Grid;
-  ghostPosition: { x: number; y: number; piece: Piece; colorId: number } | null;
+  ghostPosition: GhostPosition | null;
   clearingCells: Set<string>;
   onCellDrop: (x: number, y: number) => void;
   onCellHover: (x: number, y: number) => void;
@@ -33,9 +41,8 @@ const GameBoard: React.FC<GameBoardProps> = ({
     return piece[localY][localX] === 1;
   };
 
-  const isValidGhost = ghostPosition
-    ? canPlace(grid, ghostPosition.piece, ghostPosition.x, ghostPosition.y)
-    : false;
+  // Ghost validity comes from the SAME canPlace logic used for drop
+  const isValidGhost = ghostPosition?.isValid ?? false;
 
   return (
     <div className="game-grid">
@@ -50,7 +57,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
           row.map((cell, x) => {
             const key = `${x}-${y}`;
             const isClearing = clearingCells.has(key);
-            const showGhost = isGhostCell(x, y) && isValidGhost && cell === 0;
+            const showGhost = isGhostCell(x, y) && cell === 0;
 
             return (
               <div
@@ -78,7 +85,9 @@ const GameBoard: React.FC<GameBoardProps> = ({
                   <div
                     className={cn(
                       'ghost-tile w-full h-full',
-                      `tile-${ghostPosition.colorId}`
+                      isValidGhost 
+                        ? `tile-${ghostPosition.colorId}` 
+                        : 'ghost-invalid'
                     )}
                   />
                 )}

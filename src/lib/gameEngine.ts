@@ -24,6 +24,7 @@ export interface EngineState {
 }
 
 export const GRID_SIZE = 8;
+export const VALID_COLOR_IDS = [0, 1, 2, 3, 4, 5, 6, 7, 8] as const;
 
 export function createEmptyGrid(size = GRID_SIZE): Grid {
   return Array.from({ length: size }, () => Array(size).fill(0));
@@ -33,17 +34,65 @@ export function cloneGrid(grid: Grid): Grid {
   return grid.map(row => [...row]);
 }
 
+/**
+ * Convert pixel coordinates to grid coordinates
+ * ALWAYS use Math.floor - NEVER use Math.round
+ */
+export function pixelToGrid(
+  pixelX: number,
+  pixelY: number,
+  cellSize: number,
+  boardLeft: number,
+  boardTop: number
+): { gx: number; gy: number } {
+  return {
+    gx: Math.floor((pixelX - boardLeft) / cellSize),
+    gy: Math.floor((pixelY - boardTop) / cellSize),
+  };
+}
+
+/**
+ * Check if piece can be placed at position
+ * This is THE source of truth - used for both preview AND placement
+ */
 export function canPlace(grid: Grid, piece: Piece, x: number, y: number): boolean {
   for (let py = 0; py < piece.length; py++) {
     for (let px = 0; px < piece[py].length; px++) {
       if (!piece[py][px]) continue;
+      
       const gx = x + px;
       const gy = y + py;
+      
+      // Strict bounds check
       if (gx < 0 || gy < 0 || gx >= GRID_SIZE || gy >= GRID_SIZE) return false;
+      // Strict collision check
       if (grid[gy][gx] !== 0) return false;
     }
   }
   return true;
+}
+
+/**
+ * Validate grid integrity - run after every mutation
+ * Throws if grid is corrupted
+ */
+export function validateGrid(grid: Grid): void {
+  if (grid.length !== GRID_SIZE) {
+    throw new Error(`Grid corrupted: expected ${GRID_SIZE} rows, got ${grid.length}`);
+  }
+  
+  for (let y = 0; y < GRID_SIZE; y++) {
+    if (grid[y].length !== GRID_SIZE) {
+      throw new Error(`Grid corrupted: row ${y} has ${grid[y].length} cells`);
+    }
+    
+    for (let x = 0; x < GRID_SIZE; x++) {
+      const value = grid[y][x];
+      if (!VALID_COLOR_IDS.includes(value as typeof VALID_COLOR_IDS[number])) {
+        throw new Error(`Grid corrupted: invalid value ${value} at (${x}, ${y})`);
+      }
+    }
+  }
 }
 
 export function placePiece(
@@ -53,13 +102,15 @@ export function placePiece(
   y: number,
   colorId: ColorId,
 ): { next: EngineState; clear: ClearResult; score: ScoreResult } {
+  // STRICT: No placement if canPlace returns false
   if (!canPlace(state.grid, piece, x, y)) {
-    throw new Error("Invalid placement");
+    throw new Error("Invalid placement - canPlace returned false");
   }
 
   const grid = cloneGrid(state.grid);
   let placedBlocks = 0;
 
+  // Write piece to grid
   for (let py = 0; py < piece.length; py++) {
     for (let px = 0; px < piece[py].length; px++) {
       if (!piece[py][px]) continue;
@@ -68,6 +119,9 @@ export function placePiece(
     }
   }
 
+  // Validate after placement
+  validateGrid(grid);
+
   const clear = findClears(grid);
   const { nextGrid, pointsFromClear, comboAfter, movesSinceClear } = applyClearsAndScore({
     grid,
@@ -75,6 +129,9 @@ export function placePiece(
     movesSinceClear: state.movesSinceClear,
     clear,
   });
+
+  // Validate after clears
+  validateGrid(nextGrid);
 
   const pointsFromPlacement = placedBlocks * 2;
   const pointsGained = pointsFromPlacement + pointsFromClear;
