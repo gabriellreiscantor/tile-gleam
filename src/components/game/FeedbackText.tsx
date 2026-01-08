@@ -4,17 +4,21 @@ import type { FeedbackMessage } from '@/lib/feedback';
 
 interface FeedbackTextProps {
   message: FeedbackMessage | null;
+  messageKey?: number; // Force re-render on new message
   onComplete?: () => void;
 }
 
-const FeedbackText: React.FC<FeedbackTextProps> = ({ message, onComplete }) => {
+const FeedbackText: React.FC<FeedbackTextProps> = ({ message, messageKey, onComplete }) => {
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
 
   useEffect(() => {
     if (message) {
+      // Reset state immediately for new message
       setVisible(true);
       setAnimating(true);
+      
+      const duration = message.intensity === 'epic' ? 1200 : message.intensity === 'high' ? 800 : 500;
       
       const timeout = setTimeout(() => {
         setAnimating(false);
@@ -22,11 +26,14 @@ const FeedbackText: React.FC<FeedbackTextProps> = ({ message, onComplete }) => {
           setVisible(false);
           onComplete?.();
         }, 150);
-      }, message.intensity === 'epic' ? 1200 : message.intensity === 'high' ? 800 : 500);
+      }, duration);
       
       return () => clearTimeout(timeout);
+    } else {
+      setVisible(false);
+      setAnimating(false);
     }
-  }, [message, onComplete]);
+  }, [message, messageKey, onComplete]);
 
   if (!visible || !message) return null;
 

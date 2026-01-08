@@ -170,7 +170,17 @@ const BlockBlastGame: React.FC = () => {
   
   // ========== FEEDBACK STATE ==========
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
+  const [feedbackKey, setFeedbackKey] = useState(0);
   const [particleTrigger, setParticleTrigger] = useState<{ x: number; y: number; color: string } | null>(null);
+  
+  // Helper to show feedback - clears previous and sets new with unique key
+  const showFeedback = useCallback((msg: FeedbackMessage) => {
+    setFeedbackMessage(null); // Clear first
+    setTimeout(() => {
+      setFeedbackMessage(msg);
+      setFeedbackKey(k => k + 1);
+    }, 50);
+  }, []);
   
   const boardRef = useRef<HTMLDivElement>(null);
 
@@ -332,7 +342,7 @@ const BlockBlastGame: React.FC = () => {
         // Skip normal feedback in tutorial - the overlay handles it
         if (!tutorial.isActive) {
           const clearMsg = getClearMessage(result.clear.linesCleared);
-          setFeedbackMessage(clearMsg);
+          showFeedback(clearMsg);
         }
         
         const metrics = getBoardMetrics();
@@ -357,7 +367,7 @@ const BlockBlastGame: React.FC = () => {
           if (!tutorial.isActive) {
             const comboMsg = getComboMessage(result.next.combo);
             if (comboMsg) {
-              setTimeout(() => setFeedbackMessage(comboMsg), 300);
+              setTimeout(() => showFeedback(comboMsg), 300);
             }
           }
         }, 300);
@@ -430,7 +440,7 @@ const BlockBlastGame: React.FC = () => {
     const freshPieces = generatePiecesWithRng(gameState);
     setPieces(freshPieces);
     triggerHaptic('success');
-    setFeedbackMessage({ text: 'CONTINUE!', emoji: '🎁', intensity: 'high', color: 'green' });
+    showFeedback({ text: 'CONTINUE!', emoji: '🎁', intensity: 'high', color: 'green' });
   }, [gameState, generatePiecesWithRng]);
 
   const handleContinuePaid = useCallback(() => {
@@ -440,7 +450,7 @@ const BlockBlastGame: React.FC = () => {
     const freshPieces = generatePiecesWithRng(gameState);
     setPieces(freshPieces);
     triggerHaptic('success');
-    setFeedbackMessage({ text: 'CONTINUE!', emoji: '🔁', intensity: 'high', color: 'green' });
+    showFeedback({ text: 'CONTINUE!', emoji: '🔁', intensity: 'high', color: 'green' });
   }, [gameState, generatePiecesWithRng]);
 
   const handleContinueAd = useCallback(() => {
@@ -451,7 +461,7 @@ const BlockBlastGame: React.FC = () => {
     const freshPieces = generatePiecesWithRng(gameState);
     setPieces(freshPieces);
     triggerHaptic('success');
-    setFeedbackMessage({ text: 'CONTINUE!', emoji: '🎬', intensity: 'high', color: 'green' });
+    showFeedback({ text: 'CONTINUE!', emoji: '🎬', intensity: 'high', color: 'green' });
   }, [gameState, generatePiecesWithRng]);
 
   const handleDeclineContinue = useCallback(() => {
@@ -472,7 +482,7 @@ const BlockBlastGame: React.FC = () => {
     setPlayerResources(prev => useUndo(prev));
     setLastMoveHadClear(false);
     triggerHaptic('medium');
-    setFeedbackMessage({ text: 'UNDO!', emoji: '↩️', intensity: 'medium', color: 'blue' });
+    showFeedback({ text: 'UNDO!', emoji: '↩️', intensity: 'medium', color: 'cyan' });
   }, []);
 
   const handleBuyUndo = useCallback(() => {
@@ -574,7 +584,8 @@ const BlockBlastGame: React.FC = () => {
       
       {/* Feedback text overlay */}
       <FeedbackText 
-        message={feedbackMessage} 
+        message={feedbackMessage}
+        messageKey={feedbackKey}
         onComplete={() => setFeedbackMessage(null)} 
       />
       
