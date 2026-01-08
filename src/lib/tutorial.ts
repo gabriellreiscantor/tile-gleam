@@ -115,13 +115,13 @@ export function isValidTutorialDrop(
 export function getTutorialHintText(step: TutorialStep): string | null {
   switch (step) {
     case 'pick-piece':
-      return 'Arraste o bloco';
+      return 'Drag the block';
     case 'drop-piece':
-      return 'Solte aqui';
+      return 'Drop here';
     case 'reward':
       return 'Nice!';
     case 'complete':
-      return 'Continue jogando';
+      return 'Keep playing!';
     default:
       return null;
   }
