@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import type { GamePiece } from '@/lib/pieces';
 
@@ -94,19 +95,21 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
         {pieceContent}
       </div>
 
-      {/* Floating piece that follows cursor */}
-      {isDragging && (
+      {/* Floating piece that follows cursor - rendered via Portal to escape container stacking context */}
+      {isDragging && createPortal(
         <div
-          className="fixed pointer-events-none z-[1000]"
+          className="fixed pointer-events-none"
           style={{
             left: dragPosition.x,
             top: dragPosition.y,
             transform: 'translate(-50%, -110%) scale(1.15)',
             filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.4))',
+            zIndex: 9999,
           }}
         >
           {pieceContent}
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
