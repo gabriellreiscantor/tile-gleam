@@ -77,13 +77,14 @@ const Debug: React.FC = () => {
 
       {/* Combo Messages */}
       <Section title="🔥 COMBO MESSAGES">
-        <div className="flex flex-wrap gap-2 justify-center">
+        <div className="grid grid-cols-3 gap-2 justify-items-center">
           {[2, 3, 4, 5, 6].map((c) => {
             const msg = getComboMessage(c);
             return (
               <Button
                 key={c}
                 variant="outline"
+                className="w-24"
                 onClick={() => {
                   if (msg) {
                     showFeedback(msg);
@@ -95,7 +96,7 @@ const Debug: React.FC = () => {
               </Button>
             );
           })}
-          <Button variant="ghost" size="sm" onClick={() => setCombo(0)}>
+          <Button variant="ghost" size="sm" className="w-24" onClick={() => setCombo(0)}>
             Reset Combo
           </Button>
         </div>
