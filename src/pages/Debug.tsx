@@ -6,6 +6,7 @@ import FeedbackText from '@/components/game/FeedbackText';
 import ParticleEffect from '@/components/game/ParticleEffect';
 import AnimatedScore from '@/components/game/AnimatedScore';
 import ContinueModal from '@/components/game/ContinueModal';
+import GameOverModal from '@/components/game/GameOverModal';
 import {
   getClearMessage,
   getComboMessage,
@@ -23,6 +24,8 @@ const Debug: React.FC = () => {
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [showContinueModal, setShowContinueModal] = useState(false);
+  const [showGameOverModal, setShowGameOverModal] = useState(false);
+  const [gameOverIsRecord, setGameOverIsRecord] = useState(false);
   const [continueState, setContinueState] = useState<'free' | 'ad' | 'paid-only'>('free');
 
   const showFeedback = (message: FeedbackMessage) => {
@@ -284,6 +287,32 @@ const Debug: React.FC = () => {
         </div>
       </Section>
 
+      {/* Game Over Modal */}
+      <Section title="🏆 GAME OVER MODAL">
+        <div className="flex flex-wrap gap-2 justify-center">
+          <Button
+            variant="outline"
+            className="border-blue-500/50"
+            onClick={() => {
+              setGameOverIsRecord(false);
+              setShowGameOverModal(true);
+            }}
+          >
+            Standard
+          </Button>
+          <Button
+            variant="outline"
+            className="border-amber-500/50"
+            onClick={() => {
+              setGameOverIsRecord(true);
+              setShowGameOverModal(true);
+            }}
+          >
+            🏆 New Record!
+          </Button>
+        </div>
+      </Section>
+
       {/* Continue Modal Component */}
       <ContinueModal
         isOpen={showContinueModal}
@@ -308,9 +337,21 @@ const Debug: React.FC = () => {
         }}
         onDecline={() => {
           setShowContinueModal(false);
-          showFeedback({ text: 'GAME OVER', emoji: '💀', intensity: 'medium', color: 'red' });
+          showFeedback({ text: 'GAME OVER', emoji: '💀', intensity: 'medium', color: 'destructive' });
         }}
       />
+
+      {/* Game Over Modal Component */}
+      {showGameOverModal && (
+        <GameOverModal
+          score={gameOverIsRecord ? 1248 : 45}
+          highScore={gameOverIsRecord ? 1248 : 262}
+          onRestart={() => {
+            setShowGameOverModal(false);
+            showFeedback({ text: 'NEW GAME!', emoji: '🎮', intensity: 'medium', color: 'cyan' });
+          }}
+        />
+      )}
     </div>
   );
 };

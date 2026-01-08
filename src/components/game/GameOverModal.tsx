@@ -1,5 +1,5 @@
 import React from 'react';
-import { RotateCcw, Trophy, Crown } from 'lucide-react';
+import { Play, RotateCcw, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface GameOverModalProps {
@@ -10,70 +10,129 @@ interface GameOverModalProps {
 
 const GameOverModal: React.FC<GameOverModalProps> = ({ score, highScore, onRestart }) => {
   const isNewRecord = score >= highScore && score > 0;
-  
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
-      <div className="text-center p-8 rounded-3xl bg-gradient-to-b from-slate-800 to-slate-900 border border-white/10 max-w-sm mx-4 shadow-2xl animate-scale-in">
-        {/* Trophy Icon */}
-        <div className={cn(
-          "w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center",
+    <div 
+      className={cn(
+        "fixed inset-0 z-50 flex flex-col items-center justify-center",
+        "animate-fade-in"
+      )}
+      style={{
+        background: isNewRecord
+          ? 'linear-gradient(180deg, #4c1d95 0%, #7c3aed 50%, #5b21b6 100%)'
+          : 'linear-gradient(180deg, #0f172a 0%, #1e3a5f 50%, #0c1929 100%)',
+      }}
+    >
+      {/* Restart Button - Top Right */}
+      <button
+        onClick={onRestart}
+        className={cn(
+          "absolute top-6 right-6",
+          "w-12 h-12 rounded-full",
+          "flex items-center justify-center",
+          "transition-all duration-200 active:scale-95",
           isNewRecord 
-            ? "bg-gradient-to-br from-amber-400 to-orange-500" 
-            : "bg-gradient-to-br from-slate-600 to-slate-700"
-        )}>
-          {isNewRecord ? (
-            <Crown className="w-10 h-10 text-white" />
-          ) : (
-            <Trophy className="w-10 h-10 text-white" />
-          )}
-        </div>
+            ? "bg-amber-500/30 text-amber-300" 
+            : "bg-white/10 text-white/70"
+        )}
+        style={{
+          boxShadow: isNewRecord 
+            ? '0 4px 20px rgba(251, 191, 36, 0.3)' 
+            : '0 4px 20px rgba(0, 0, 0, 0.3)',
+        }}
+      >
+        <RotateCcw className="w-6 h-6" />
+      </button>
+
+      {/* Main Content */}
+      <div className="flex flex-col items-center px-8 animate-scale-in">
         
-        <h2 className="text-3xl font-bold text-white mb-2">
-          {isNewRecord ? 'New Record!' : 'Game Over'}
-        </h2>
-        <p className="text-white/60 mb-6">
-          {isNewRecord ? 'Amazing performance!' : 'Great game!'}
-        </p>
-        
-        {/* Score Display */}
-        <div className="mb-6">
-          <p className="text-xs text-white/50 uppercase tracking-widest mb-1">
-            Final Score
-          </p>
-          <p className={cn(
-            "text-5xl font-black tabular-nums",
-            isNewRecord ? "text-amber-400" : "text-white"
-          )}
-          style={{
-            textShadow: isNewRecord 
-              ? '0 0 30px #fbbf24, 0 0 60px #f59e0b' 
-              : 'none'
-          }}
+        {/* Crown Icon - Only for New Record */}
+        {isNewRecord && (
+          <div 
+            className="mb-4 animate-bounce"
+            style={{
+              animation: 'bounce 1s ease-in-out infinite, pulse 2s ease-in-out infinite',
+            }}
           >
-            {score.toLocaleString()}
-          </p>
-        </div>
-        
-        {/* Best Score (if not new record) */}
-        {!isNewRecord && highScore > 0 && (
-          <div className="mb-6 flex items-center justify-center gap-2 text-amber-400/80">
-            <Crown className="w-4 h-4" />
-            <span className="text-sm font-medium">Best: {highScore.toLocaleString()}</span>
+            <Crown 
+              className="w-20 h-20 text-amber-400" 
+              style={{
+                filter: 'drop-shadow(0 0 20px rgba(251, 191, 36, 0.6))',
+              }}
+            />
           </div>
         )}
-        
+
+        {/* Title */}
+        <h1 
+          className={cn(
+            "text-5xl font-black mb-10 text-center",
+            isNewRecord ? "text-amber-300" : "text-white"
+          )}
+          style={{
+            textShadow: isNewRecord
+              ? '0 4px 0 #b45309, 0 0 40px rgba(251, 191, 36, 0.5)'
+              : '0 4px 0 rgba(0, 0, 0, 0.3), 0 0 30px rgba(255, 255, 255, 0.2)',
+            letterSpacing: '-0.02em',
+          }}
+        >
+          {isNewRecord ? 'Best Score!' : 'Game Over'}
+        </h1>
+
+        {/* Score Section */}
+        <div className="flex flex-col items-center mb-8">
+          <span className="text-lg text-white/60 uppercase tracking-widest font-medium mb-2">
+            Score
+          </span>
+          <span 
+            className="text-7xl font-black text-white tabular-nums"
+            style={{
+              textShadow: '0 4px 0 rgba(0, 0, 0, 0.2)',
+            }}
+          >
+            {score.toLocaleString()}
+          </span>
+        </div>
+
+        {/* Best Score Section - Only for Standard State */}
+        {!isNewRecord && highScore > 0 && (
+          <div className="flex flex-col items-center mb-10">
+            <span className="text-sm text-amber-400/80 uppercase tracking-widest font-medium mb-1">
+              Best Score
+            </span>
+            <span 
+              className="text-3xl font-bold text-amber-400 tabular-nums"
+              style={{
+                textShadow: '0 0 20px rgba(251, 191, 36, 0.4)',
+              }}
+            >
+              {highScore.toLocaleString()}
+            </span>
+          </div>
+        )}
+
+        {/* Spacer for new record state */}
+        {isNewRecord && <div className="h-10" />}
+
+        {/* Play Again Button */}
         <button
           onClick={onRestart}
           className={cn(
-            "flex items-center justify-center gap-2 w-full py-4 px-6 rounded-2xl",
-            "text-lg font-bold text-white",
-            "bg-gradient-to-r from-cyan-500 to-blue-500",
-            "shadow-lg shadow-cyan-500/30",
-            "transition-all duration-200 active:scale-95"
+            "flex items-center justify-center",
+            "w-20 h-20 rounded-full",
+            "transition-all duration-200 active:scale-95",
+            isNewRecord
+              ? "bg-gradient-to-b from-amber-400 to-amber-500"
+              : "bg-gradient-to-b from-emerald-400 to-emerald-500"
           )}
+          style={{
+            boxShadow: isNewRecord
+              ? '0 6px 0 #b45309, 0 10px 30px rgba(251, 191, 36, 0.4)'
+              : '0 6px 0 #047857, 0 10px 30px rgba(16, 185, 129, 0.4)',
+          }}
         >
-          <RotateCcw className="w-5 h-5" />
-          Play Again
+          <Play className="w-10 h-10 text-white ml-1" fill="white" />
         </button>
       </div>
     </div>
