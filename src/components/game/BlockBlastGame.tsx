@@ -96,30 +96,25 @@ const BlockBlastGame: React.FC = () => {
     });
   }, []);
 
-  const handleDrag = useCallback((clientX: number, clientY: number) => {
+  // handleDrag receives the BLOCK position (already offset from finger by DraggablePiece)
+  const handleDrag = useCallback((blockX: number, blockY: number) => {
     if (!dragState) return;
     
     const metrics = getBoardMetrics();
     if (!metrics) return;
     
     // Update pixel position for visual tracking
-    setDragState(prev => prev ? { ...prev, pixelX: clientX, pixelY: clientY } : null);
+    setDragState(prev => prev ? { ...prev, pixelX: blockX, pixelY: blockY } : null);
     
     const piece = dragState.piece;
     const pieceWidthCells = piece.shape[0].length;
     const pieceHeightCells = piece.shape.length;
     
-    // CRITICAL: Offset for finger - piece appears ABOVE the touch point
-    // This prevents finger from covering the piece
-    const offsetY = -pieceHeightCells * metrics.cellSize * 1.5;
-    
-    // Center piece horizontally on cursor
-    const offsetX = -(pieceWidthCells * metrics.cellSize) / 2;
-    
-    // Convert pixel to grid using Math.floor (NEVER round)
+    // Convert BLOCK position (not finger) to grid
+    // Center the piece on the block position
     const { gx, gy } = pixelToGrid(
-      clientX + offsetX,
-      clientY + offsetY,
+      blockX - (pieceWidthCells * metrics.cellSize) / 2,
+      blockY - (pieceHeightCells * metrics.cellSize) / 2,
       metrics.cellSize,
       metrics.left,
       metrics.top
@@ -133,7 +128,7 @@ const BlockBlastGame: React.FC = () => {
       gy < GRID_SIZE;
     
     if (isNearBoard) {
-      // Use EXACT same canPlace logic for ghost as for drop
+      // Ghost is GRID-SNAPPED - uses same canPlace logic as drop
       const isValid = canPlace(gameState.grid, piece.shape, gx, gy);
       
       setGhostState({
