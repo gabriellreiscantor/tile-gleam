@@ -16,9 +16,9 @@ const GameHUD: React.FC<GameHUDProps> = ({
   onOpenSettings,
 }) => {
   return (
-    <div className="w-full max-w-md px-4">
+    <div className="w-full max-w-md">
       <div className="flex items-start justify-between">
-        {/* LEFT: Best Score */}
+        {/* LEFT: Best Score - Flush left */}
         <div className="flex flex-col items-start min-w-[70px]">
           <div className="flex items-center gap-1 text-amber-400 mb-0.5">
             <Crown className="w-4 h-4" />
