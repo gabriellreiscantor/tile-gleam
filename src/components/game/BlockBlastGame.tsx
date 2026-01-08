@@ -53,7 +53,7 @@ import {
   isValidTutorialDrop,
   type TutorialState,
 } from '@/lib/tutorial';
-import { preloadSounds, sounds } from '@/lib/sounds';
+import { preloadSounds, sounds, playBGM, stopBGM, setBGMEnabled } from '@/lib/sounds';
 
 // Convert RNG piece to GamePiece format
 interface GamePiece {
@@ -124,10 +124,33 @@ const BlockBlastGame: React.FC = () => {
   // History for undo
   const historyRef = useRef<{ state: EngineState; pieces: (GamePiece | null)[] }[]>([]);
   
-  // Preload sounds on mount
+  // Preload sounds and start BGM on mount
   useEffect(() => {
     preloadSounds();
+    
+    // Start BGM after first user interaction (browser requirement)
+    const startBGM = () => {
+      if (playerResources.musicEnabled) {
+        playBGM();
+      }
+      document.removeEventListener('click', startBGM);
+      document.removeEventListener('touchstart', startBGM);
+    };
+    
+    document.addEventListener('click', startBGM);
+    document.addEventListener('touchstart', startBGM);
+    
+    return () => {
+      stopBGM();
+      document.removeEventListener('click', startBGM);
+      document.removeEventListener('touchstart', startBGM);
+    };
   }, []);
+  
+  // Sync BGM with musicEnabled setting
+  useEffect(() => {
+    setBGMEnabled(playerResources.musicEnabled);
+  }, [playerResources.musicEnabled]);
   
   // Save resources on change
   useEffect(() => {
@@ -560,7 +583,12 @@ const BlockBlastGame: React.FC = () => {
     setClearingCells(new Set());
     setDragState(null);
     setGhostState(null);
-  }, [gameState.score, generatePiecesWithRng]);
+    
+    // Restart BGM if music is enabled
+    if (playerResources.musicEnabled) {
+      playBGM();
+    }
+  }, [gameState.score, generatePiecesWithRng, playerResources.musicEnabled]);
 
   // Transform ghostState to GameBoard format
   const ghostPosition = ghostState ? {
