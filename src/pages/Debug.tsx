@@ -62,7 +62,7 @@ const Debug: React.FC = () => {
 
       {/* Clear Messages */}
       <Section title="📢 CLEAR MESSAGES">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 justify-center">
           {[1, 2, 3, 4].map((lines) => (
             <Button
               key={lines}
@@ -77,7 +77,7 @@ const Debug: React.FC = () => {
 
       {/* Combo Messages */}
       <Section title="🔥 COMBO MESSAGES">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 justify-center">
           {[2, 3, 4, 5, 6].map((c) => {
             const msg = getComboMessage(c);
             return (
@@ -103,7 +103,7 @@ const Debug: React.FC = () => {
 
       {/* Special Messages */}
       <Section title="⭐ SPECIAL MESSAGES">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 justify-center">
           <Button
             variant="outline"
             className="border-yellow-500/50"
@@ -129,7 +129,7 @@ const Debug: React.FC = () => {
 
       {/* Particles */}
       <Section title="💥 PARTICLES">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 justify-center">
           <Button
             variant="outline"
             className="border-cyan-500/50"
@@ -170,10 +170,10 @@ const Debug: React.FC = () => {
 
       {/* Score */}
       <Section title="🎯 ANIMATED SCORE">
-        <div className="flex items-center gap-6 mb-4">
+        <div className="flex items-center justify-center gap-6 mb-4">
           <AnimatedScore score={score} combo={combo} />
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 justify-center">
           <Button variant="outline" onClick={() => setScore((s) => s + 100)}>
             +100
           </Button>
@@ -191,7 +191,7 @@ const Debug: React.FC = () => {
 
       {/* Haptics */}
       <Section title="📳 HAPTICS (mobile)">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 justify-center">
           <Button variant="outline" onClick={() => triggerHaptic('light')}>
             Light
           </Button>
@@ -215,7 +215,7 @@ const Debug: React.FC = () => {
 
       {/* Continue Modal */}
       <Section title="💀 CONTINUE MODAL (Game Over)">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 justify-center">
           <Button
             variant="outline"
             className="border-green-500/50"
@@ -282,7 +282,7 @@ const Debug: React.FC = () => {
 
 // Helper component for sections
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <div className="mb-6">
+  <div className="mb-6 text-center">
     <h2 className="text-sm font-semibold text-muted-foreground mb-3">{title}</h2>
     {children}
   </div>
