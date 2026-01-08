@@ -16,10 +16,10 @@ const PieceTray: React.FC<PieceTrayProps> = ({
   onDrag,
 }) => {
   return (
-    <div className="piece-tray">
-      <div className="flex items-center justify-center gap-6">
+    <div className="piece-tray w-full max-w-md mx-auto">
+      <div className="flex items-center justify-evenly gap-1">
         {pieces.map((piece, index) => (
-          <div key={piece?.id ?? `empty-${index}`} className="flex items-center justify-center min-w-20 min-h-20">
+          <div key={piece?.id ?? `empty-${index}`} className="flex items-center justify-center min-w-16 min-h-16">
             {piece && (
               <DraggablePiece
                 piece={piece}
