@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { ContinueEligibility } from '@/lib/playerResources';
+import { showRewardedAd, isRewardedAdReady } from '@/lib/adService';
 
 interface ContinueModalProps {
   isOpen: boolean;
@@ -21,9 +22,31 @@ const ContinueModal: React.FC<ContinueModalProps> = ({
   onContinueAd,
   onDecline,
 }) => {
+  const [isLoadingAd, setIsLoadingAd] = useState(false);
+  const [adError, setAdError] = useState<string | null>(null);
+
   if (!isOpen) return null;
 
   const { state, hasPaidContinue, canWatchAd } = eligibility;
+
+  const handleWatchAd = async () => {
+    setIsLoadingAd(true);
+    setAdError(null);
+    
+    try {
+      const result = await showRewardedAd();
+      
+      if (result.success) {
+        onContinueAd();
+      } else {
+        setAdError(result.error || 'Ad not available');
+      }
+    } catch (e) {
+      setAdError('Failed to show ad');
+    } finally {
+      setIsLoadingAd(false);
+    }
+  };
 
   // Determine title and subtitle based on state
   const getTitle = () => {
@@ -122,13 +145,15 @@ const ContinueModal: React.FC<ContinueModalProps> = ({
             {state === 'ad' && (
               <>
                 <button
-                  onClick={onContinueAd}
+                  onClick={handleWatchAd}
+                  disabled={isLoadingAd}
                   className={cn(
                     "w-full py-4 px-6 rounded-2xl font-bold text-[17px]",
                     "bg-gradient-to-b from-[#f59e0b] to-[#d97706]",
                     "text-white",
                     "active:scale-[0.97] transition-all duration-150",
-                    "relative overflow-hidden"
+                    "relative overflow-hidden",
+                    isLoadingAd && "opacity-80 cursor-wait"
                   )}
                   style={{
                     boxShadow: '0 8px 32px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255,255,255,0.2)',
@@ -136,10 +161,25 @@ const ContinueModal: React.FC<ContinueModalProps> = ({
                 >
                   <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/10 pointer-events-none" />
                   <div className="flex items-center justify-center gap-2 relative">
-                    <span className="text-xl">🎬</span>
-                    <span>Watch Ad to Continue</span>
+                    {isLoadingAd ? (
+                      <>
+                        <span className="animate-spin text-xl">⏳</span>
+                        <span>Loading Ad...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-xl">🎬</span>
+                        <span>Watch Ad to Continue</span>
+                      </>
+                    )}
                   </div>
                 </button>
+                
+                {adError && (
+                  <p className="text-red-400 text-sm text-center -mt-1">
+                    {adError}. Try again or use paid continue.
+                  </p>
+                )}
                 
                 {hasPaidContinue && (
                   <button
