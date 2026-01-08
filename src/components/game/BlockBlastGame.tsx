@@ -11,9 +11,9 @@ import {
   placePiece,
   canPlace,
   anyMoveAvailable,
+  pixelToGrid,
   GRID_SIZE,
   type EngineState,
-  type Piece,
 } from '@/lib/gameEngine';
 import { generatePieceSet, type GamePiece } from '@/lib/pieces';
 import { 
@@ -23,27 +23,60 @@ import {
   type FeedbackMessage 
 } from '@/lib/feedback';
 
+// ============================================
+// ARCHITECTURE: Anti-Bug Pattern
+// ============================================
+// 1. Grid state is NEVER modified during drag
+// 2. Ghost uses EXACT same canPlace logic as drop
+// 3. pixelToGrid uses Math.floor, NEVER round
+// 4. Drop only succeeds if canPlace returns true
+// ============================================
+
+interface DragState {
+  piece: GamePiece;
+  // Pixel position for visual feedback
+  pixelX: number;
+  pixelY: number;
+}
+
+interface GhostState {
+  gridX: number;
+  gridY: number;
+  piece: number[][];
+  colorId: number;
+  isValid: boolean; // true = green, false = red
+}
+
 const BlockBlastGame: React.FC = () => {
+  // ========== GAME STATE (logical) ==========
   const [gameState, setGameState] = useState<EngineState>(createInitialState);
   const [pieces, setPieces] = useState<(GamePiece | null)[]>(() => generatePieceSet());
   const [isGameOver, setIsGameOver] = useState(false);
   const [clearingCells, setClearingCells] = useState<Set<string>>(new Set());
   const [screenShake, setScreenShake] = useState(false);
   
-  // Feedback systems
+  // ========== DRAG STATE (visual only) ==========
+  const [dragState, setDragState] = useState<DragState | null>(null);
+  const [ghostState, setGhostState] = useState<GhostState | null>(null);
+  
+  // ========== FEEDBACK STATE ==========
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
   const [particleTrigger, setParticleTrigger] = useState<{ x: number; y: number; color: string } | null>(null);
   
-  const [draggingPiece, setDraggingPiece] = useState<GamePiece | null>(null);
-  const [ghostPosition, setGhostPosition] = useState<{
-    x: number;
-    y: number;
-    piece: Piece;
-    colorId: number;
-  } | null>(null);
-  
   const boardRef = useRef<HTMLDivElement>(null);
-  const dragPositionRef = useRef({ x: 0, y: 0 });
+
+  // ========== HELPERS ==========
+  const getBoardMetrics = useCallback(() => {
+    if (!boardRef.current) return null;
+    const rect = boardRef.current.getBoundingClientRect();
+    return {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+      cellSize: rect.width / GRID_SIZE,
+    };
+  }, []);
 
   const checkGameOver = useCallback((state: EngineState, currentPieces: (GamePiece | null)[]) => {
     const availablePieces = currentPieces
@@ -54,171 +87,215 @@ const BlockBlastGame: React.FC = () => {
     return !anyMoveAvailable(state.grid, availablePieces);
   }, []);
 
-  const handleDragStart = useCallback((piece: GamePiece, element: HTMLElement) => {
-    setDraggingPiece(piece);
+  // ========== DRAG HANDLERS ==========
+  const handleDragStart = useCallback((piece: GamePiece, _element: HTMLElement) => {
+    setDragState({
+      piece,
+      pixelX: 0,
+      pixelY: 0,
+    });
   }, []);
 
   const handleDrag = useCallback((clientX: number, clientY: number) => {
-    dragPositionRef.current = { x: clientX, y: clientY };
+    if (!dragState) return;
     
-    if (!draggingPiece || !boardRef.current) return;
+    const metrics = getBoardMetrics();
+    if (!metrics) return;
     
-    const boardRect = boardRef.current.getBoundingClientRect();
-    const cellSize = boardRect.width / GRID_SIZE;
+    // Update pixel position for visual tracking
+    setDragState(prev => prev ? { ...prev, pixelX: clientX, pixelY: clientY } : null);
     
-    const relX = clientX - boardRect.left;
-    const relY = clientY - boardRect.top;
+    const piece = dragState.piece;
+    const pieceWidthCells = piece.shape[0].length;
+    const pieceHeightCells = piece.shape.length;
     
-    // Center the piece on cursor
-    const pieceWidth = draggingPiece.shape[0].length;
-    const pieceHeight = draggingPiece.shape.length;
+    // CRITICAL: Offset for finger - piece appears ABOVE the touch point
+    // This prevents finger from covering the piece
+    const offsetY = -pieceHeightCells * metrics.cellSize * 1.5;
     
-    const gridX = Math.round((relX - (pieceWidth * cellSize) / 2) / cellSize);
-    const gridY = Math.round((relY - (pieceHeight * cellSize) / 2) / cellSize);
+    // Center piece horizontally on cursor
+    const offsetX = -(pieceWidthCells * metrics.cellSize) / 2;
     
-    if (gridX >= -pieceWidth && gridX < GRID_SIZE && gridY >= -pieceHeight && gridY < GRID_SIZE) {
-      setGhostPosition({
-        x: gridX,
-        y: gridY,
-        piece: draggingPiece.shape,
-        colorId: draggingPiece.colorId,
+    // Convert pixel to grid using Math.floor (NEVER round)
+    const { gx, gy } = pixelToGrid(
+      clientX + offsetX,
+      clientY + offsetY,
+      metrics.cellSize,
+      metrics.left,
+      metrics.top
+    );
+    
+    // Check if piece is within board bounds for ghost
+    const isNearBoard = 
+      gx >= -pieceWidthCells && 
+      gx < GRID_SIZE && 
+      gy >= -pieceHeightCells && 
+      gy < GRID_SIZE;
+    
+    if (isNearBoard) {
+      // Use EXACT same canPlace logic for ghost as for drop
+      const isValid = canPlace(gameState.grid, piece.shape, gx, gy);
+      
+      setGhostState({
+        gridX: gx,
+        gridY: gy,
+        piece: piece.shape,
+        colorId: piece.colorId,
+        isValid,
       });
     } else {
-      setGhostPosition(null);
+      setGhostState(null);
     }
-  }, [draggingPiece]);
+  }, [dragState, gameState.grid, getBoardMetrics]);
 
   const handleDragEnd = useCallback(() => {
-    if (!draggingPiece || !ghostPosition) {
-      setDraggingPiece(null);
-      setGhostPosition(null);
+    if (!dragState || !ghostState) {
+      // No valid drop position - snap back
+      setDragState(null);
+      setGhostState(null);
       return;
     }
     
-    const { x, y } = ghostPosition;
+    const { gridX, gridY, isValid } = ghostState;
+    const piece = dragState.piece;
     
-    if (canPlace(gameState.grid, draggingPiece.shape, x, y)) {
-      try {
-        const result = placePiece(
-          gameState,
-          draggingPiece.shape,
-          x,
-          y,
-          draggingPiece.colorId
-        );
-        
-        // Handle line clears with animation and feedback
-        if (result.clear.linesCleared > 0) {
-          const cellsToAnimate = new Set<string>();
-          result.clear.clearedRows.forEach(row => {
-            for (let col = 0; col < GRID_SIZE; col++) {
-              cellsToAnimate.add(`${col}-${row}`);
-            }
-          });
-          result.clear.clearedCols.forEach(col => {
-            for (let row = 0; row < GRID_SIZE; row++) {
-              cellsToAnimate.add(`${col}-${row}`);
-            }
-          });
-          setClearingCells(cellsToAnimate);
-          
-          // Trigger feedback
-          const clearMsg = getClearMessage(result.clear.linesCleared);
-          setFeedbackMessage(clearMsg);
-          
-          // Particles at board center
-          if (boardRef.current) {
-            const rect = boardRef.current.getBoundingClientRect();
-            setParticleTrigger({
-              x: rect.left + rect.width / 2,
-              y: rect.top + rect.height / 2,
-              color: '',
-            });
-          }
-          
-          // Haptic feedback
-          triggerHaptic(result.clear.linesCleared >= 2 ? 'heavy' : 'medium');
-          
-          // Screen shake for big clears
-          if (result.clear.linesCleared >= 2) {
-            setScreenShake(true);
-            setTimeout(() => setScreenShake(false), 300);
-          }
-          
-          setTimeout(() => {
-            setClearingCells(new Set());
-            
-            // Show combo message after clear message
-            const comboMsg = getComboMessage(result.next.combo);
-            if (comboMsg) {
-              setTimeout(() => setFeedbackMessage(comboMsg), 300);
-            }
-          }, 300);
-        } else {
-          // Light haptic for placement
-          triggerHaptic('light');
-        }
-        
-        setGameState(result.next);
-        
-        // Remove used piece
-        const newPieces = pieces.map(p => 
-          p?.id === draggingPiece.id ? null : p
-        );
-        
-        // Check if all pieces used
-        const remainingPieces = newPieces.filter(p => p !== null);
-        
-        if (remainingPieces.length === 0) {
-          const freshPieces = generatePieceSet();
-          setPieces(freshPieces);
-          
-          // Check game over with new pieces
-          setTimeout(() => {
-            if (checkGameOver(result.next, freshPieces)) {
-              setIsGameOver(true);
-            }
-          }, 100);
-        } else {
-          setPieces(newPieces);
-          
-          // Check game over with remaining pieces
-          if (checkGameOver(result.next, newPieces)) {
-            setIsGameOver(true);
-          }
-        }
-      } catch (e) {
-        console.error('Invalid placement:', e);
-      }
+    // STRICT: Only place if canPlace returns true
+    // This is the SAME check used for ghost preview
+    if (!isValid) {
+      // Invalid placement - snap back with error feedback
+      triggerHaptic('light');
+      setDragState(null);
+      setGhostState(null);
+      return;
     }
     
-    setDraggingPiece(null);
-    setGhostPosition(null);
-  }, [draggingPiece, ghostPosition, gameState, pieces, checkGameOver]);
+    try {
+      const result = placePiece(
+        gameState,
+        piece.shape,
+        gridX,
+        gridY,
+        piece.colorId
+      );
+      
+      // Success! Handle line clears with animation and feedback
+      if (result.clear.linesCleared > 0) {
+        const cellsToAnimate = new Set<string>();
+        result.clear.clearedRows.forEach(row => {
+          for (let col = 0; col < GRID_SIZE; col++) {
+            cellsToAnimate.add(`${col}-${row}`);
+          }
+        });
+        result.clear.clearedCols.forEach(col => {
+          for (let row = 0; row < GRID_SIZE; row++) {
+            cellsToAnimate.add(`${col}-${row}`);
+          }
+        });
+        setClearingCells(cellsToAnimate);
+        
+        // Trigger feedback
+        const clearMsg = getClearMessage(result.clear.linesCleared);
+        setFeedbackMessage(clearMsg);
+        
+        // Particles at board center
+        const metrics = getBoardMetrics();
+        if (metrics) {
+          setParticleTrigger({
+            x: metrics.left + metrics.width / 2,
+            y: metrics.top + metrics.height / 2,
+            color: '',
+          });
+        }
+        
+        // Haptic feedback
+        triggerHaptic(result.clear.linesCleared >= 2 ? 'heavy' : 'medium');
+        
+        // Screen shake for big clears
+        if (result.clear.linesCleared >= 2) {
+          setScreenShake(true);
+          setTimeout(() => setScreenShake(false), 300);
+        }
+        
+        setTimeout(() => {
+          setClearingCells(new Set());
+          
+          // Show combo message after clear message
+          const comboMsg = getComboMessage(result.next.combo);
+          if (comboMsg) {
+            setTimeout(() => setFeedbackMessage(comboMsg), 300);
+          }
+        }, 300);
+      } else {
+        // Light haptic for placement without clear
+        triggerHaptic('light');
+      }
+      
+      setGameState(result.next);
+      
+      // Remove used piece
+      const newPieces = pieces.map(p => 
+        p?.id === piece.id ? null : p
+      );
+      
+      // Check if all pieces used
+      const remainingPieces = newPieces.filter(p => p !== null);
+      
+      if (remainingPieces.length === 0) {
+        const freshPieces = generatePieceSet();
+        setPieces(freshPieces);
+        
+        // Check game over with new pieces
+        setTimeout(() => {
+          if (checkGameOver(result.next, freshPieces)) {
+            setIsGameOver(true);
+          }
+        }, 100);
+      } else {
+        setPieces(newPieces);
+        
+        // Check game over with remaining pieces
+        if (checkGameOver(result.next, newPieces)) {
+          setIsGameOver(true);
+        }
+      }
+    } catch (e) {
+      // This should NEVER happen if canPlace logic is correct
+      console.error('CRITICAL: Placement failed after canPlace returned true:', e);
+    }
+    
+    // Clear drag state
+    setDragState(null);
+    setGhostState(null);
+  }, [dragState, ghostState, gameState, pieces, checkGameOver, getBoardMetrics]);
 
   const handleCellHover = useCallback((x: number, y: number) => {
-    if (!draggingPiece) return;
+    if (!dragState) return;
     
-    const pieceWidth = draggingPiece.shape[0].length;
-    const pieceHeight = draggingPiece.shape.length;
+    const piece = dragState.piece;
+    const pieceWidth = piece.shape[0].length;
+    const pieceHeight = piece.shape.length;
     
-    // Position piece so clicked cell is roughly centered in it
+    // Position piece so hovered cell is roughly at top-left
     const gridX = x - Math.floor(pieceWidth / 2);
     const gridY = y - Math.floor(pieceHeight / 2);
     
-    setGhostPosition({
-      x: gridX,
-      y: gridY,
-      piece: draggingPiece.shape,
-      colorId: draggingPiece.colorId,
+    // Use EXACT same canPlace logic
+    const isValid = canPlace(gameState.grid, piece.shape, gridX, gridY);
+    
+    setGhostState({
+      gridX,
+      gridY,
+      piece: piece.shape,
+      colorId: piece.colorId,
+      isValid,
     });
-  }, [draggingPiece]);
+  }, [dragState, gameState.grid]);
 
   const handleCellLeave = useCallback(() => {
-    // Keep ghost visible while dragging
+    // Keep ghost visible while dragging - only hide when drag ends
   }, []);
 
-  const handleCellDrop = useCallback((x: number, y: number) => {
+  const handleCellDrop = useCallback(() => {
     handleDragEnd();
   }, [handleDragEnd]);
 
@@ -227,9 +304,18 @@ const BlockBlastGame: React.FC = () => {
     setPieces(generatePieceSet());
     setIsGameOver(false);
     setClearingCells(new Set());
-    setDraggingPiece(null);
-    setGhostPosition(null);
+    setDragState(null);
+    setGhostState(null);
   }, []);
+
+  // Transform ghostState to GameBoard format
+  const ghostPosition = ghostState ? {
+    x: ghostState.gridX,
+    y: ghostState.gridY,
+    piece: ghostState.piece,
+    colorId: ghostState.colorId,
+    isValid: ghostState.isValid,
+  } : null;
 
   return (
     <>
