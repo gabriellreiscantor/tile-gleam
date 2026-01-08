@@ -1,6 +1,8 @@
 import React from 'react';
 import { GRID_SIZE, type Grid, type Piece } from '@/lib/gameEngine';
 import { cn } from '@/lib/utils';
+import { type ItemGrid } from '@/lib/collectibles';
+import ItemBadge from './ItemBadge';
 
 interface GhostPosition {
   x: number;
@@ -12,6 +14,7 @@ interface GhostPosition {
 
 interface GameBoardProps {
   grid: Grid;
+  itemGrid?: ItemGrid;
   ghostPosition: GhostPosition | null;
   clearingCells: Set<string>;
   tutorialTargetCells?: Set<string> | null;
@@ -22,6 +25,7 @@ interface GameBoardProps {
 
 const GameBoard: React.FC<GameBoardProps> = ({
   grid,
+  itemGrid,
   ghostPosition,
   clearingCells,
   tutorialTargetCells,
@@ -61,6 +65,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
             const isClearing = clearingCells.has(key);
             const showGhost = isGhostCell(x, y) && cell === 0;
             const isTutorialTarget = tutorialTargetCells?.has(key) ?? false;
+            const itemInCell = itemGrid?.[y]?.[x] ?? null;
 
             return (
               <div
@@ -79,11 +84,14 @@ const GameBoard: React.FC<GameBoardProps> = ({
                 {cell !== 0 && (
                   <div
                     className={cn(
-                      'game-tile w-full h-full',
+                      'game-tile w-full h-full relative',
                       `tile-${cell}`,
                       isClearing && 'clearing'
                     )}
-                  />
+                  >
+                    {/* Item badge in top-right corner */}
+                    {itemInCell && <ItemBadge itemType={itemInCell} />}
+                  </div>
                 )}
                 {showGhost && ghostPosition && (
                   <div

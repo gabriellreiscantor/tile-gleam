@@ -323,6 +323,7 @@ const Debug: React.FC = () => {
           hasPaidContinue: true,
           canWatchAd: continueState === 'ad',
         } as ContinueEligibility}
+        itemResources={{ crystals: 5, ice: 3 }}
         onContinueFree={() => {
           setShowContinueModal(false);
           showFeedback({ text: 'FREE CONTINUE!', emoji: '🎁', intensity: 'high', color: 'green' });
@@ -334,6 +335,10 @@ const Debug: React.FC = () => {
         onContinueAd={() => {
           setShowContinueModal(false);
           showFeedback({ text: 'AD CONTINUE!', emoji: '🎬', intensity: 'high', color: 'green' });
+        }}
+        onContinueCrystal={() => {
+          setShowContinueModal(false);
+          showFeedback({ text: 'CRYSTAL CONTINUE!', emoji: '💎', intensity: 'high', color: 'purple' });
         }}
         onDecline={() => {
           setShowContinueModal(false);

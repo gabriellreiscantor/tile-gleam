@@ -1,9 +1,12 @@
 import React from "react";
+import ItemHUD from "./ItemHUD";
+import type { ItemResources } from "@/lib/collectibles";
 
 type GameHUDProps = {
   score: number;
   bestScore: number;
   combo?: number;
+  itemResources?: ItemResources;
   onOpenSettings: () => void;
 };
 
@@ -11,6 +14,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
   score,
   bestScore,
   combo = 0,
+  itemResources,
   onOpenSettings,
 }) => {
   return (
@@ -52,23 +56,30 @@ const GameHUD: React.FC<GameHUDProps> = ({
           )}
         </div>
 
-        {/* RIGHT — SETTINGS */}
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          className="
-            absolute right-0 top-0
-            h-11 w-11
-            rounded-2xl
-            bg-white/10
-            backdrop-blur
-            flex items-center justify-center
-            active:scale-95
-          "
-          aria-label="Settings"
-        >
-          <span className="text-[18px] leading-none">⚙️</span>
-        </button>
+        {/* RIGHT — ITEMS + SETTINGS */}
+        <div className="absolute right-0 top-0 flex items-start gap-2">
+          {/* Item counters */}
+          {itemResources && (
+            <ItemHUD resources={itemResources} className="mt-1" />
+          )}
+          
+          {/* Settings button */}
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="
+              h-11 w-11
+              rounded-2xl
+              bg-white/10
+              backdrop-blur
+              flex items-center justify-center
+              active:scale-95
+            "
+            aria-label="Settings"
+          >
+            <span className="text-[18px] leading-none">⚙️</span>
+          </button>
+        </div>
       </div>
     </div>
   );

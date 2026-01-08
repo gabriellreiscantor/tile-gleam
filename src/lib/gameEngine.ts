@@ -14,6 +14,7 @@ export interface ScoreResult {
   linesCleared: number;
   comboAfter: number;
   pointsGained: number;
+  multiLineBonus: number;
 }
 
 export interface EngineState {
@@ -123,7 +124,7 @@ export function placePiece(
   validateGrid(grid);
 
   const clear = findClears(grid);
-  const { nextGrid, pointsFromClear, comboAfter, movesSinceClear } = applyClearsAndScore({
+  const { nextGrid, pointsFromClear, comboAfter, movesSinceClear, multiLineBonus } = applyClearsAndScore({
     grid,
     combo: state.combo,
     movesSinceClear: state.movesSinceClear,
@@ -151,6 +152,7 @@ export function placePiece(
       linesCleared: clear.linesCleared,
       comboAfter,
       pointsGained,
+      multiLineBonus,
     },
   };
 }
@@ -178,19 +180,32 @@ export function findClears(grid: Grid): ClearResult {
   };
 }
 
+// Multi-line bonus: rewards clearing multiple lines at once
+const MULTI_LINE_BONUS: Record<number, number> = {
+  1: 0,
+  2: 10,
+  3: 30,
+  4: 60,
+};
+
+function getMultiLineBonus(linesCleared: number): number {
+  if (linesCleared <= 1) return 0;
+  return MULTI_LINE_BONUS[Math.min(linesCleared, 4)] ?? 60;
+}
+
 function applyClearsAndScore(args: {
   grid: Grid;
   combo: number;
   movesSinceClear: number;
   clear: ClearResult;
-}): { nextGrid: Grid; pointsFromClear: number; comboAfter: number; movesSinceClear: number } {
+}): { nextGrid: Grid; pointsFromClear: number; comboAfter: number; movesSinceClear: number; multiLineBonus: number } {
   const grid = args.grid;
   const { clearedRows, clearedCols, linesCleared } = args.clear;
 
   if (linesCleared === 0) {
     const moves = args.movesSinceClear + 1;
     const comboAfter = moves >= 3 ? 0 : args.combo;
-    return { nextGrid: grid, pointsFromClear: 0, comboAfter, movesSinceClear: moves };
+    return { nextGrid: grid, pointsFromClear: 0, comboAfter, movesSinceClear: moves, multiLineBonus: 0 };
   }
 
   clearedRows.forEach(r => {
@@ -204,9 +219,10 @@ function applyClearsAndScore(args: {
 
   const base = 25 * linesCleared;
   const mult = 1 + Math.min(comboAfter, 10) * 0.12;
-  const pointsFromClear = Math.round(base * mult);
+  const multiLineBonus = getMultiLineBonus(linesCleared);
+  const pointsFromClear = Math.round(base * mult) + multiLineBonus;
 
-  return { nextGrid: grid, pointsFromClear, comboAfter, movesSinceClear: 0 };
+  return { nextGrid: grid, pointsFromClear, comboAfter, movesSinceClear: 0, multiLineBonus };
 }
 
 export function anyMoveAvailable(grid: Grid, pieces: Piece[]): boolean {
