@@ -55,7 +55,7 @@ const Debug: React.FC = () => {
 
       {/* Feedback Display Area */}
       <div className="relative h-32 mb-6 bg-muted/30 rounded-xl flex items-center justify-center border border-border">
-        <span className="text-muted-foreground text-sm">Área de Preview</span>
+        <span className="text-muted-foreground text-sm">Preview Area</span>
         <FeedbackText message={feedbackMessage} onComplete={() => setFeedbackMessage(null)} />
         <ParticleEffect trigger={particleTrigger} count={20} />
       </div>
@@ -63,7 +63,7 @@ const Debug: React.FC = () => {
       {/* Clear Messages */}
       <Section title="📢 CLEAR MESSAGES">
         <div className="flex flex-col items-center gap-2">
-          {/* Linha 1: 1, 2, 3 Linhas */}
+          {/* Row 1: 1, 2, 3 Lines */}
           <div className="flex gap-2 justify-center">
             {[1, 2, 3].map((lines) => (
               <Button
@@ -71,14 +71,14 @@ const Debug: React.FC = () => {
                 variant="outline"
                 onClick={() => showFeedback(getClearMessage(lines))}
               >
-                {lines} Linha{lines > 1 ? 's' : ''}
+                {lines} Line{lines > 1 ? 's' : ''}
               </Button>
             ))}
           </div>
-          {/* Linha 2: 4 Linhas centralizado */}
+          {/* Row 2: 4 Lines centered */}
           <div className="flex gap-2 justify-center">
             <Button variant="outline" onClick={() => showFeedback(getClearMessage(4))}>
-              4 Linhas
+              4 Lines
             </Button>
           </div>
         </div>
