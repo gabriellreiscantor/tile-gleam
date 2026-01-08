@@ -1,21 +1,14 @@
-// Sound effects management using free online audio files
+// Sound effects management using Web Audio API (iOS compatible)
 
-// Free sound URLs from various CDNs/sources
+// Sound URLs
 const SOUND_URLS = {
-  // UI sounds
   click: 'https://cdn.freesound.org/previews/171/171671_2437358-lq.mp3',
   drop: 'https://cdn.freesound.org/previews/270/270304_5123851-lq.mp3',
-  
-  // Clear sounds
   clear: 'https://cdn.freesound.org/previews/341/341695_5858296-lq.mp3',
   combo: 'https://cdn.freesound.org/previews/270/270545_5123851-lq.mp3',
-  
-  // Game events
   gameOver: 'https://cdn.freesound.org/previews/277/277403_4804865-lq.mp3',
   levelUp: 'https://cdn.freesound.org/previews/270/270528_5123851-lq.mp3',
   success: 'https://cdn.freesound.org/previews/270/270404_5123851-lq.mp3',
-  
-  // Error/invalid
   error: 'https://cdn.freesound.org/previews/142/142608_1840739-lq.mp3',
 } as const;
 
@@ -24,47 +17,112 @@ const BGM_URL = 'https://cdn.pixabay.com/audio/2024/11/01/audio_073aborfc3.mp3';
 
 type SoundType = keyof typeof SOUND_URLS;
 
-// Audio cache to avoid re-downloading
-const audioCache = new Map<SoundType, HTMLAudioElement>();
+// ========== WEB AUDIO API SETUP ==========
 
-// BGM audio instance
-let bgmAudio: HTMLAudioElement | null = null;
+let audioContext: AudioContext | null = null;
+let isUnlocked = false;
 
-// Preload all sounds
-export function preloadSounds(): void {
-  Object.entries(SOUND_URLS).forEach(([key, url]) => {
-    const audio = new Audio(url);
-    audio.preload = 'auto';
-    audio.volume = 0.5;
-    audioCache.set(key as SoundType, audio);
-  });
-  
-  // Preload BGM
-  bgmAudio = new Audio(BGM_URL);
-  bgmAudio.preload = 'auto';
-  bgmAudio.loop = true;
-  bgmAudio.volume = 0.25;
+// AudioBuffer cache
+const audioBuffers = new Map<SoundType, AudioBuffer>();
+
+// Get or create AudioContext
+function getAudioContext(): AudioContext {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  return audioContext;
 }
 
-// Play a sound effect
-export function playSound(type: SoundType, volume = 0.5): void {
-  try {
-    let audio = audioCache.get(type);
+// Unlock AudioContext for iOS (CRITICAL!)
+export function unlockAudioContext(): void {
+  const ctx = getAudioContext();
+  
+  if (ctx.state === 'suspended') {
+    // Create and play empty buffer to unlock
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
     
-    if (!audio) {
-      audio = new Audio(SOUND_URLS[type]);
-      audioCache.set(type, audio);
+    ctx.resume().then(() => {
+      isUnlocked = true;
+      console.debug('AudioContext unlocked!');
+    }).catch(() => {
+      // Fallback - still mark as unlocked to try playing sounds
+      isUnlocked = true;
+    });
+  } else {
+    isUnlocked = true;
+  }
+}
+
+// Check if audio is unlocked
+export function isAudioUnlocked(): boolean {
+  return isUnlocked;
+}
+
+// ========== SOUND LOADING ==========
+
+async function loadSound(url: string, key: SoundType): Promise<void> {
+  try {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    const audioBuffer = await getAudioContext().decodeAudioData(arrayBuffer);
+    audioBuffers.set(key, audioBuffer);
+  } catch (e) {
+    console.debug('Failed to load sound:', key, e);
+  }
+}
+
+// Preload all sounds
+export async function preloadSounds(): Promise<void> {
+  // Initialize AudioContext
+  getAudioContext();
+  
+  // Load all sounds in parallel
+  const loadPromises = Object.entries(SOUND_URLS).map(([key, url]) => 
+    loadSound(url, key as SoundType)
+  );
+  
+  await Promise.all(loadPromises);
+  console.debug('All sounds preloaded');
+}
+
+// ========== SOUND PLAYBACK ==========
+
+export function playSound(type: SoundType, volume = 0.5): void {
+  // Always try to unlock on any sound attempt
+  if (!isUnlocked) {
+    unlockAudioContext();
+  }
+  
+  const buffer = audioBuffers.get(type);
+  if (!buffer) {
+    console.debug('Sound not loaded:', type);
+    return;
+  }
+  
+  try {
+    const ctx = getAudioContext();
+    
+    // Ensure context is running
+    if (ctx.state === 'suspended') {
+      ctx.resume();
     }
     
-    // Clone for overlapping sounds
-    const clone = audio.cloneNode() as HTMLAudioElement;
-    clone.volume = Math.max(0, Math.min(1, volume));
-    clone.play().catch(e => {
-      // Silently fail - user may not have interacted yet
-      console.debug('Sound play failed:', e);
-    });
+    const source = ctx.createBufferSource();
+    const gainNode = ctx.createGain();
+    
+    source.buffer = buffer;
+    gainNode.gain.value = Math.max(0, Math.min(1, volume));
+    
+    source.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    source.start(0);
   } catch (e) {
-    console.debug('Sound error:', e);
+    console.debug('Sound play error:', e);
   }
 }
 
@@ -77,11 +135,25 @@ export function playSoundIfEnabled(type: SoundType, soundEnabled: boolean, volum
 
 // ========== BGM FUNCTIONS ==========
 
+let bgmAudio: HTMLAudioElement | null = null;
+
 export function playBGM(): void {
+  // Ensure AudioContext is unlocked first
+  if (!isUnlocked) {
+    unlockAudioContext();
+  }
+  
   if (!bgmAudio) {
     bgmAudio = new Audio(BGM_URL);
     bgmAudio.loop = true;
     bgmAudio.volume = 0.25;
+    bgmAudio.preload = 'auto';
+  }
+  
+  // Ensure AudioContext is running (helps on iOS)
+  const ctx = getAudioContext();
+  if (ctx.state === 'suspended') {
+    ctx.resume();
   }
   
   bgmAudio.play().catch(e => {
@@ -104,6 +176,12 @@ export function pauseBGM(): void {
 
 export function resumeBGM(): void {
   if (bgmAudio && bgmAudio.paused) {
+    // Ensure context is running
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    
     bgmAudio.play().catch(e => {
       console.debug('BGM resume failed:', e);
     });
@@ -118,7 +196,8 @@ export function setBGMEnabled(enabled: boolean): void {
   }
 }
 
-// Shorthand functions for common sounds
+// ========== SHORTHAND FUNCTIONS ==========
+
 export const sounds = {
   click: (enabled: boolean) => playSoundIfEnabled('click', enabled, 0.3),
   drop: (enabled: boolean) => playSoundIfEnabled('drop', enabled, 0.4),
