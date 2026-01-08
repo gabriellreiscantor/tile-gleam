@@ -66,19 +66,23 @@ html, body {
     --grid-cell-border: 230 15% 22%;
     --grid-glow: 200 100% 60%;
     
-    /* Tile colors - vibrant and saturated */
-    --tile-red: 0 80% 60%;
-    --tile-orange: 30 90% 55%;
-    --tile-yellow: 50 95% 55%;
-    --tile-green: 150 70% 50%;
-    --tile-cyan: 180 80% 55%;
-    --tile-blue: 215 85% 60%;
-    --tile-purple: 265 75% 65%;
-    --tile-pink: 335 85% 65%;
+    /* Tile colors - ULTRA VIBRANT & SATURATED */
+    --tile-red: 0 85% 55%;
+    --tile-orange: 28 95% 52%;
+    --tile-yellow: 48 100% 50%;
+    --tile-green: 145 80% 45%;
+    --tile-cyan: 185 95% 48%;
+    --tile-blue: 220 90% 58%;
+    --tile-purple: 270 85% 60%;
+    --tile-pink: 330 90% 58%;
 
     /* Effects */
-    --glow-intensity: 0.4;
-    --shadow-depth: 4px;
+    --glow-intensity: 0.5;
+    --shadow-depth: 5px;
+    
+    /* Piece tray */
+    --tray-bg: 230 25% 12%;
+    --tray-border: 230 20% 22%;
   }
 
   .dark {
@@ -132,21 +136,35 @@ html, body {
     background: hsl(var(--primary) / 0.15);
   }
 
-  /* Tile with depth */
+  /* Tile with premium depth and bevel */
   .game-tile {
     @apply rounded-lg relative overflow-hidden;
     box-shadow: 
-      inset 0 -3px 0 hsl(0 0% 0% / 0.3),
-      inset 0 2px 0 hsl(0 0% 100% / 0.2),
-      0 2px 4px hsl(0 0% 0% / 0.3);
+      inset 0 -4px 0 hsl(0 0% 0% / 0.35),
+      inset 0 3px 0 hsl(0 0% 100% / 0.3),
+      inset 3px 0 0 hsl(0 0% 100% / 0.1),
+      inset -3px 0 0 hsl(0 0% 0% / 0.15),
+      0 3px 6px hsl(0 0% 0% / 0.35),
+      0 1px 2px hsl(0 0% 0% / 0.2);
   }
 
   .game-tile::before {
     content: '';
     @apply absolute inset-0 rounded-lg;
     background: linear-gradient(
-      135deg,
-      hsl(0 0% 100% / 0.25) 0%,
+      145deg,
+      hsl(0 0% 100% / 0.35) 0%,
+      hsl(0 0% 100% / 0.1) 30%,
+      transparent 60%
+    );
+  }
+  
+  .game-tile::after {
+    content: '';
+    @apply absolute inset-0 rounded-lg;
+    background: radial-gradient(
+      ellipse at 30% 20%,
+      hsl(0 0% 100% / 0.2) 0%,
       transparent 50%
     );
   }
@@ -183,32 +201,56 @@ html, body {
     opacity: 0.6;
   }
 
-  /* Piece selector area */
+  /* Piece tray - premium container */
   .piece-tray {
-    @apply rounded-2xl p-4;
+    @apply rounded-3xl py-5 px-4;
     background: linear-gradient(
-      to top,
-      hsl(var(--card) / 0.95),
-      hsl(var(--card) / 0.8)
+      180deg,
+      hsl(var(--tray-bg) / 0.95) 0%,
+      hsl(var(--tray-bg)) 100%
     );
-    backdrop-filter: blur(10px);
+    border: 1px solid hsl(var(--tray-border) / 0.6);
     box-shadow: 
-      0 -10px 40px -10px hsl(0 0% 0% / 0.3),
-      inset 0 1px 0 hsl(0 0% 100% / 0.05);
+      0 -8px 32px -8px hsl(0 0% 0% / 0.5),
+      inset 0 1px 0 hsl(0 0% 100% / 0.08),
+      inset 0 -1px 0 hsl(0 0% 0% / 0.2);
+  }
+  
+  /* Individual piece slot */
+  .piece-slot {
+    @apply flex items-center justify-center;
+    min-width: 90px;
+    min-height: 90px;
+    border-radius: 16px;
+    background: linear-gradient(
+      180deg,
+      hsl(230 20% 14% / 0.6) 0%,
+      hsl(230 20% 10% / 0.4) 100%
+    );
+    box-shadow: 
+      inset 0 2px 4px hsl(0 0% 0% / 0.2),
+      inset 0 -1px 0 hsl(0 0% 100% / 0.03);
   }
 
-  /* Draggable piece */
+  /* Draggable piece - premium feel */
   .draggable-piece {
-    @apply cursor-grab active:cursor-grabbing transition-transform duration-150;
+    @apply cursor-grab transition-all duration-200 ease-out;
+    transform-origin: center center;
   }
 
   .draggable-piece:hover {
-    transform: scale(1.05);
+    transform: scale(1.08) translateY(-2px);
+    filter: brightness(1.1);
+  }
+  
+  .draggable-piece:active {
+    transform: scale(1.12) translateY(-4px);
+    filter: brightness(1.15);
   }
 
   .draggable-piece.dragging {
     @apply opacity-90;
-    transform: scale(1.1);
+    transform: scale(1.15);
     z-index: 100;
   }
 

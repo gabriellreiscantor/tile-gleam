@@ -1,11 +1,16 @@
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
-import type { GamePiece } from '@/lib/pieces';
 
 // FIXED OFFSET: Piece floats above finger (never covered)
 const DRAG_OFFSET_Y = 90; // px above touch point
 const DRAG_OFFSET_X = 0;  // centered horizontally
+
+interface GamePiece {
+  shape: number[][];
+  colorId: number;
+  id: string;
+}
 
 interface DraggablePieceProps {
   piece: GamePiece;
@@ -26,7 +31,8 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
 
-  const tileSize = 28;
+  // Larger tiles for better visibility in tray
+  const tileSize = 24;
   const gap = 2;
 
   // Calculate piece dimensions in pixels
@@ -73,19 +79,19 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
     return <div className="w-20 h-20" />;
   }
 
-  const pieceContent = (
+  const pieceContent = (scale: number = 1) => (
     <div
       className="grid"
       style={{
-        gridTemplateColumns: `repeat(${piece.shape[0].length}, ${tileSize}px)`,
-        gap: `${gap}px`,
+        gridTemplateColumns: `repeat(${piece.shape[0].length}, ${tileSize * scale}px)`,
+        gap: `${gap * scale}px`,
       }}
     >
       {piece.shape.map((row, y) =>
         row.map((cell, x) => (
           <div
             key={`${x}-${y}`}
-            style={{ width: tileSize, height: tileSize }}
+            style={{ width: tileSize * scale, height: tileSize * scale }}
           >
             {cell === 1 && (
               <div
@@ -100,22 +106,22 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
 
   return (
     <>
-      {/* Placeholder to keep layout space */}
+      {/* Piece in tray */}
       <div
         ref={pieceRef}
         className={cn(
-          'draggable-piece touch-none select-none',
-          isDragging && 'opacity-30'
+          'draggable-piece touch-none select-none p-2',
+          isDragging && 'opacity-20'
         )}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        {pieceContent}
+        {pieceContent(1)}
       </div>
 
-      {/* Floating piece - positioned at BLOCK coords (already offset from finger) */}
+      {/* Floating piece during drag - slightly larger */}
       {isDragging && createPortal(
         <div
           className="fixed pointer-events-none"
@@ -123,14 +129,14 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
             left: dragPosition.x,
             top: dragPosition.y,
             // Center the piece on the floating position
-            marginLeft: -pieceWidthPx / 2,
-            marginTop: -pieceHeightPx / 2,
-            transform: 'scale(1.1)',
-            filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.4))',
+            marginLeft: -(pieceWidthPx * 1.15) / 2,
+            marginTop: -(pieceHeightPx * 1.15) / 2,
+            transform: 'scale(1.15)',
+            filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.5)) brightness(1.1)',
             zIndex: 9999,
           }}
         >
-          {pieceContent}
+          {pieceContent(1)}
         </div>,
         document.body
       )}
