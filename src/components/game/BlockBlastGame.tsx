@@ -668,11 +668,13 @@ const BlockBlastGame: React.FC = () => {
           onClose={() => setShowSettingsModal(false)}
           soundEnabled={playerResources.soundEnabled}
           musicEnabled={playerResources.musicEnabled}
+          vibrationEnabled={playerResources.vibrationEnabled}
           onToggleSound={() => setPlayerResources(prev => ({ ...prev, soundEnabled: !prev.soundEnabled }))}
           onToggleMusic={() => setPlayerResources(prev => ({ ...prev, musicEnabled: !prev.musicEnabled }))}
-          onRestorePurchases={() => {
-            // TODO: Implement restore purchases
-            triggerHaptic('success');
+          onToggleVibration={() => setPlayerResources(prev => ({ ...prev, vibrationEnabled: !prev.vibrationEnabled }))}
+          onReplay={() => {
+            setShowSettingsModal(false);
+            handleRestart();
           }}
         />
         
