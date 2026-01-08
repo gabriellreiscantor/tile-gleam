@@ -19,8 +19,8 @@ const SOUND_URLS = {
   error: 'https://cdn.freesound.org/previews/142/142608_1840739-lq.mp3',
 } as const;
 
-// BGM URL - calm puzzle game music
-const BGM_URL = 'https://cdn.freesound.org/previews/612/612095_5674468-lq.mp3';
+// BGM URL - calm lofi puzzle game music
+const BGM_URL = 'https://cdn.pixabay.com/audio/2024/11/01/audio_073aborfc3.mp3';
 
 type SoundType = keyof typeof SOUND_URLS;
 
