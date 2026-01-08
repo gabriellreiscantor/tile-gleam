@@ -615,7 +615,7 @@ const BlockBlastGame: React.FC = () => {
         {/* Header - HUD with Best Score, Current Score, Settings */}
         <div className="flex-shrink-0 pt-2">
           <GameHUD
-            currentScore={gameState.score}
+            score={gameState.score}
             bestScore={playerResources.highScore}
             combo={gameState.combo}
             onOpenSettings={() => setShowSettingsModal(true)}
