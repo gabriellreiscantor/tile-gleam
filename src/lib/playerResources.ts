@@ -6,6 +6,9 @@ export interface PlayerResources {
   swaps: number;
   clearCells: number;
   
+  // Free continue tracking (one-time only)
+  hasUsedFreeContinue: boolean;
+  
   // Tracking
   totalGamesPlayed: number;
   totalSessionsToday: number;
@@ -24,6 +27,8 @@ const INITIAL_RESOURCES: PlayerResources = {
   undos: 3,
   swaps: 2,
   clearCells: 1,
+  
+  hasUsedFreeContinue: false,
   
   totalGamesPlayed: 0,
   totalSessionsToday: 0,
@@ -80,9 +85,11 @@ export function startNewGame(resources: PlayerResources): PlayerResources {
 
 // ========== CONTINUE LOGIC ==========
 
+export type ContinueState = 'free' | 'ad' | 'paid-only';
+
 export interface ContinueEligibility {
   canOffer: boolean;
-  reason: string;
+  state: ContinueState;
   hasPaidContinue: boolean;
   canWatchAd: boolean;
 }
@@ -91,13 +98,24 @@ export function checkContinueEligibility(
   resources: PlayerResources,
   currentScore: number,
   currentCombo: number,
-  gridOccupancy: number // 0-1
+  gridOccupancy: number, // 0-1
+  isTutorial: boolean = false
 ): ContinueEligibility {
+  // Never show during tutorial
+  if (isTutorial) {
+    return {
+      canOffer: false,
+      state: 'paid-only',
+      hasPaidContinue: false,
+      canWatchAd: false,
+    };
+  }
+  
   // Rule: Max 1 continue per game
   if (resources.continuesUsedThisGame >= 1) {
     return {
       canOffer: false,
-      reason: 'Já usou continue nesta partida',
+      state: 'paid-only',
       hasPaidContinue: false,
       canWatchAd: false,
     };
@@ -114,28 +132,43 @@ export function checkContinueEligibility(
   if (!shouldOffer) {
     return {
       canOffer: false,
-      reason: 'Partida muito curta',
+      state: 'paid-only',
       hasPaidContinue: false,
       canWatchAd: false,
     };
   }
   
+  // Determine state based on free continue availability
+  const hasFreeContinue = !resources.hasUsedFreeContinue;
+  const canWatchAd = true; // Assume ads always available (can be disabled per platform)
+  
+  let state: ContinueState;
+  if (hasFreeContinue) {
+    state = 'free';
+  } else if (canWatchAd) {
+    state = 'ad';
+  } else {
+    state = 'paid-only';
+  }
+  
   return {
     canOffer: true,
-    reason: isHighScoreAttempt ? 'Quase batendo recorde!' : 
-            hasActiveCombo ? 'Combo ativo!' : 'Você estava indo bem!',
+    state,
     hasPaidContinue: resources.continues > 0,
-    canWatchAd: true, // Always allow ad option
+    canWatchAd: !hasFreeContinue && canWatchAd,
   };
 }
 
-export function useContinue(resources: PlayerResources, type: 'paid' | 'ad'): PlayerResources {
+export function useContinue(resources: PlayerResources, type: 'free' | 'paid' | 'ad'): PlayerResources {
   const updated = { ...resources };
   updated.continuesUsedThisGame += 1;
   
-  if (type === 'paid') {
+  if (type === 'free') {
+    updated.hasUsedFreeContinue = true;
+  } else if (type === 'paid') {
     updated.continues = Math.max(0, updated.continues - 1);
   }
+  // 'ad' type doesn't consume any resources
   
   return updated;
 }
