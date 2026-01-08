@@ -1,9 +1,11 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import GameBoard from './GameBoard';
 import PieceTray from './PieceTray';
 import AnimatedScore from './AnimatedScore';
 import GameOverModal from './GameOverModal';
+import ContinueModal from './ContinueModal';
+import UndoButton from './UndoButton';
 import FeedbackText from './FeedbackText';
 import ParticleEffect from './ParticleEffect';
 import {
@@ -29,6 +31,17 @@ import {
   triggerHaptic,
   type FeedbackMessage 
 } from '@/lib/feedback';
+import {
+  loadResources,
+  saveResources,
+  startNewGame,
+  checkContinueEligibility,
+  useContinue,
+  checkUndoAvailability,
+  useUndo,
+  updateHighScore,
+  type PlayerResources,
+} from '@/lib/playerResources';
 
 // Convert RNG piece to GamePiece format
 interface GamePiece {
@@ -43,6 +56,17 @@ function rngPiecesToGamePieces(rngPieces: GeneratedPiece[]): GamePiece[] {
     colorId: p.colorId,
     id: `piece-${Date.now()}-${i}-${p.id}`,
   }));
+}
+
+// Calculate grid occupancy (0-1)
+function getGridOccupancy(grid: number[][]): number {
+  let filled = 0;
+  for (const row of grid) {
+    for (const cell of row) {
+      if (cell !== 0) filled++;
+    }
+  }
+  return filled / (GRID_SIZE * GRID_SIZE);
 }
 
 // ============================================
@@ -73,13 +97,28 @@ const BlockBlastGame: React.FC = () => {
   // ========== RNG STATE ==========
   const rngStateRef = useRef<RngState>(createInitialRngState());
   
+  // ========== PLAYER RESOURCES ==========
+  const [playerResources, setPlayerResources] = useState<PlayerResources>(() => {
+    const resources = loadResources();
+    return startNewGame(resources);
+  });
+  const [showContinueModal, setShowContinueModal] = useState(false);
+  const [lastMoveHadClear, setLastMoveHadClear] = useState(false);
+  
+  // History for undo
+  const historyRef = useRef<{ state: EngineState; pieces: (GamePiece | null)[] }[]>([]);
+  
+  // Save resources on change
+  useEffect(() => {
+    saveResources(playerResources);
+  }, [playerResources]);
+  
   // Helper to generate pieces using RNG system
   const generatePiecesWithRng = useCallback((state: EngineState) => {
     const trio = generateTrio(
       { score: state.score, movesSinceClear: state.movesSinceClear, grid: state.grid },
       rngStateRef.current
     );
-    // Debug info (remove in production)
     console.log('[RNG Debug]', trio.debug);
     return rngPiecesToGamePieces(trio.pieces);
   }, []);
@@ -203,6 +242,16 @@ const BlockBlastGame: React.FC = () => {
       return;
     }
     
+    // Save state for undo BEFORE placing
+    historyRef.current.push({
+      state: { ...gameState },
+      pieces: [...pieces],
+    });
+    // Keep only last 3 states
+    if (historyRef.current.length > 3) {
+      historyRef.current.shift();
+    }
+    
     try {
       const result = placePiece(
         gameState,
@@ -212,8 +261,12 @@ const BlockBlastGame: React.FC = () => {
         piece.colorId
       );
       
+      // Track if this move had a clear
+      const hadClear = result.clear.linesCleared > 0;
+      setLastMoveHadClear(hadClear);
+      
       // Success! Handle line clears with animation and feedback
-      if (result.clear.linesCleared > 0) {
+      if (hadClear) {
         const cellsToAnimate = new Set<string>();
         result.clear.clearedRows.forEach(row => {
           for (let col = 0; col < GRID_SIZE; col++) {
@@ -281,8 +334,7 @@ const BlockBlastGame: React.FC = () => {
         // Check game over with new pieces
         setTimeout(() => {
           if (checkGameOver(result.next, freshPieces)) {
-            rngOnGameOver(rngStateRef.current);
-            setIsGameOver(true);
+            handleGameOver(result.next);
           }
         }, 100);
       } else {
@@ -290,8 +342,7 @@ const BlockBlastGame: React.FC = () => {
         
         // Check game over with remaining pieces
         if (checkGameOver(result.next, newPieces)) {
-          rngOnGameOver(rngStateRef.current);
-          setIsGameOver(true);
+          handleGameOver(result.next);
         }
       }
     } catch (e) {
@@ -302,7 +353,77 @@ const BlockBlastGame: React.FC = () => {
     // Clear drag state
     setDragState(null);
     setGhostState(null);
-  }, [dragState, ghostState, gameState, pieces, checkGameOver, getBoardMetrics]);
+  }, [dragState, ghostState, gameState, pieces, checkGameOver, getBoardMetrics, generatePiecesWithRng]);
+
+  // ========== GAME OVER FLOW ==========
+  const handleGameOver = useCallback((finalState: EngineState) => {
+    const gridOccupancy = getGridOccupancy(finalState.grid);
+    const eligibility = checkContinueEligibility(
+      playerResources,
+      finalState.score,
+      finalState.combo,
+      gridOccupancy
+    );
+    
+    // Update high score
+    setPlayerResources(prev => updateHighScore(prev, finalState.score));
+    
+    if (eligibility.canOffer) {
+      // Show continue modal instead of game over
+      setShowContinueModal(true);
+    } else {
+      // Direct game over
+      rngOnGameOver(rngStateRef.current);
+      setIsGameOver(true);
+    }
+  }, [playerResources]);
+
+  const handleContinuePaid = useCallback(() => {
+    setPlayerResources(prev => useContinue(prev, 'paid'));
+    setShowContinueModal(false);
+    // Resume game - generate new pieces
+    const freshPieces = generatePiecesWithRng(gameState);
+    setPieces(freshPieces);
+    triggerHaptic('success');
+    setFeedbackMessage({ text: 'CONTINUE!', emoji: '🔁', intensity: 'high', color: 'green' });
+  }, [gameState, generatePiecesWithRng]);
+
+  const handleContinueAd = useCallback(() => {
+    // In real app, show rewarded ad here
+    // For now, simulate ad watched
+    setPlayerResources(prev => useContinue(prev, 'ad'));
+    setShowContinueModal(false);
+    const freshPieces = generatePiecesWithRng(gameState);
+    setPieces(freshPieces);
+    triggerHaptic('success');
+    setFeedbackMessage({ text: 'CONTINUE!', emoji: '🎬', intensity: 'high', color: 'green' });
+  }, [gameState, generatePiecesWithRng]);
+
+  const handleDeclineContinue = useCallback(() => {
+    setShowContinueModal(false);
+    rngOnGameOver(rngStateRef.current);
+    setIsGameOver(true);
+  }, []);
+
+  // ========== UNDO ==========
+  const undoAvailability = checkUndoAvailability(playerResources, lastMoveHadClear);
+
+  const handleUndo = useCallback(() => {
+    if (historyRef.current.length === 0) return;
+    
+    const lastState = historyRef.current.pop()!;
+    setGameState(lastState.state);
+    setPieces(lastState.pieces);
+    setPlayerResources(prev => useUndo(prev));
+    setLastMoveHadClear(false);
+    triggerHaptic('medium');
+    setFeedbackMessage({ text: 'UNDO!', emoji: '↩️', intensity: 'medium', color: 'blue' });
+  }, []);
+
+  const handleBuyUndo = useCallback(() => {
+    // In real app, show IAP purchase flow
+    console.log('Would show IAP for undo purchase');
+  }, []);
 
   const handleCellHover = useCallback((x: number, y: number) => {
     if (!dragState) return;
@@ -339,9 +460,15 @@ const BlockBlastGame: React.FC = () => {
     const initialState = createInitialState();
     // Reset RNG state on restart, but keep tilt protection
     onGoodRun(rngStateRef.current, gameState.score);
+    // Start new game in resources
+    setPlayerResources(prev => startNewGame(prev));
+    // Clear history
+    historyRef.current = [];
+    setLastMoveHadClear(false);
     setGameState(initialState);
     setPieces(generatePiecesWithRng(initialState));
     setIsGameOver(false);
+    setShowContinueModal(false);
     setClearingCells(new Set());
     setDragState(null);
     setGhostState(null);
@@ -379,9 +506,17 @@ const BlockBlastGame: React.FC = () => {
           paddingRight: 'max(env(safe-area-inset-right), 12px)',
         }}
       >
-        {/* Score - Top */}
-        <div className="flex-shrink-0 pt-2">
-          <AnimatedScore score={gameState.score} combo={gameState.combo} />
+        {/* Header - Score & Undo */}
+        <div className="flex-shrink-0 pt-2 w-full max-w-md px-4">
+          <div className="flex items-center justify-between">
+            <div className="w-14" /> {/* Spacer for balance */}
+            <AnimatedScore score={gameState.score} combo={gameState.combo} />
+            <UndoButton
+              availability={undoAvailability}
+              onUndo={handleUndo}
+              onBuyUndo={handleBuyUndo}
+            />
+          </div>
         </div>
         
         {/* Board - Center, fills available space */}
@@ -407,6 +542,21 @@ const BlockBlastGame: React.FC = () => {
             onDrag={handleDrag}
           />
         </div>
+        
+        {/* Continue Modal */}
+        <ContinueModal
+          isOpen={showContinueModal}
+          score={gameState.score}
+          eligibility={checkContinueEligibility(
+            playerResources,
+            gameState.score,
+            gameState.combo,
+            getGridOccupancy(gameState.grid)
+          )}
+          onContinuePaid={handleContinuePaid}
+          onContinueAd={handleContinueAd}
+          onDecline={handleDeclineContinue}
+        />
         
         {isGameOver && (
           <GameOverModal score={gameState.score} onRestart={handleRestart} />
