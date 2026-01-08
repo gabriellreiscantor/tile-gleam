@@ -424,6 +424,15 @@ const BlockBlastGame: React.FC = () => {
     }
   }, [playerResources]);
 
+  const handleContinueFree = useCallback(() => {
+    setPlayerResources(prev => useContinue(prev, 'free'));
+    setShowContinueModal(false);
+    const freshPieces = generatePiecesWithRng(gameState);
+    setPieces(freshPieces);
+    triggerHaptic('success');
+    setFeedbackMessage({ text: 'CONTINUE!', emoji: '🎁', intensity: 'high', color: 'green' });
+  }, [gameState, generatePiecesWithRng]);
+
   const handleContinuePaid = useCallback(() => {
     setPlayerResources(prev => useContinue(prev, 'paid'));
     setShowContinueModal(false);
@@ -642,8 +651,10 @@ const BlockBlastGame: React.FC = () => {
             playerResources,
             gameState.score,
             gameState.combo,
-            getGridOccupancy(gameState.grid)
+            getGridOccupancy(gameState.grid),
+            tutorial.isActive
           )}
+          onContinueFree={handleContinueFree}
           onContinuePaid={handleContinuePaid}
           onContinueAd={handleContinueAd}
           onDecline={handleDeclineContinue}
