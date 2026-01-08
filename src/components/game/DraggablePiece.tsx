@@ -31,8 +31,8 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
 
-  // Larger tiles for better visibility in tray
-  const tileSize = 24;
+  // Compact tiles for tray display
+  const tileSize = 18;
   const gap = 2;
 
   // Calculate piece dimensions in pixels
