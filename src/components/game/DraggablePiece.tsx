@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { GamePiece } from '@/lib/pieces';
 
@@ -19,7 +19,7 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
 }) => {
   const pieceRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
 
   const tileSize = 28;
   const gap = 2;
@@ -29,12 +29,7 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
     
     e.preventDefault();
     setIsDragging(true);
-    
-    const rect = pieceRef.current.getBoundingClientRect();
-    setOffset({
-      x: e.clientX - rect.left - rect.width / 2,
-      y: e.clientY - rect.top - rect.height / 2,
-    });
+    setDragPosition({ x: e.clientX, y: e.clientY });
     
     onDragStart(piece, pieceRef.current);
     pieceRef.current.setPointerCapture(e.pointerId);
@@ -42,6 +37,7 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDragging) return;
+    setDragPosition({ x: e.clientX, y: e.clientY });
     onDrag(e.clientX, e.clientY);
   };
 
@@ -56,41 +52,63 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
     return <div className="w-20 h-20" />;
   }
 
-  return (
+  const pieceContent = (
     <div
-      ref={pieceRef}
-      className={cn(
-        'draggable-piece touch-none select-none',
-        isDragging && 'dragging'
-      )}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
+      className="grid"
+      style={{
+        gridTemplateColumns: `repeat(${piece.shape[0].length}, ${tileSize}px)`,
+        gap: `${gap}px`,
+      }}
     >
-      <div
-        className="grid"
-        style={{
-          gridTemplateColumns: `repeat(${piece.shape[0].length}, ${tileSize}px)`,
-          gap: `${gap}px`,
-        }}
-      >
-        {piece.shape.map((row, y) =>
-          row.map((cell, x) => (
-            <div
-              key={`${x}-${y}`}
-              style={{ width: tileSize, height: tileSize }}
-            >
-              {cell === 1 && (
-                <div
-                  className={cn('game-tile w-full h-full', `tile-${piece.colorId}`)}
-                />
-              )}
-            </div>
-          ))
-        )}
-      </div>
+      {piece.shape.map((row, y) =>
+        row.map((cell, x) => (
+          <div
+            key={`${x}-${y}`}
+            style={{ width: tileSize, height: tileSize }}
+          >
+            {cell === 1 && (
+              <div
+                className={cn('game-tile w-full h-full', `tile-${piece.colorId}`)}
+              />
+            )}
+          </div>
+        ))
+      )}
     </div>
+  );
+
+  return (
+    <>
+      {/* Placeholder to keep layout space */}
+      <div
+        ref={pieceRef}
+        className={cn(
+          'draggable-piece touch-none select-none',
+          isDragging && 'opacity-30'
+        )}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
+        {pieceContent}
+      </div>
+
+      {/* Floating piece that follows cursor */}
+      {isDragging && (
+        <div
+          className="fixed pointer-events-none z-[1000]"
+          style={{
+            left: dragPosition.x,
+            top: dragPosition.y,
+            transform: 'translate(-50%, -110%) scale(1.15)',
+            filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.4))',
+          }}
+        >
+          {pieceContent}
+        </div>
+      )}
+    </>
   );
 };
 
