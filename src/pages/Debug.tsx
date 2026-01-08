@@ -282,7 +282,7 @@ const Debug: React.FC = () => {
 
 // Helper component for sections
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <div className="mb-6 text-center">
+  <div className="mb-6 flex flex-col items-center">
     <h2 className="text-sm font-semibold text-muted-foreground mb-3">{title}</h2>
     {children}
   </div>
