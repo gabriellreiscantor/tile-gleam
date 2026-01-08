@@ -1,8 +1,11 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
+import { cn } from '@/lib/utils';
 import GameBoard from './GameBoard';
 import PieceTray from './PieceTray';
-import ScoreDisplay from './ScoreDisplay';
+import AnimatedScore from './AnimatedScore';
 import GameOverModal from './GameOverModal';
+import FeedbackText from './FeedbackText';
+import ParticleEffect from './ParticleEffect';
 import {
   createInitialState,
   placePiece,
@@ -13,12 +16,23 @@ import {
   type Piece,
 } from '@/lib/gameEngine';
 import { generatePieceSet, type GamePiece } from '@/lib/pieces';
+import { 
+  getClearMessage, 
+  getComboMessage, 
+  triggerHaptic,
+  type FeedbackMessage 
+} from '@/lib/feedback';
 
 const BlockBlastGame: React.FC = () => {
   const [gameState, setGameState] = useState<EngineState>(createInitialState);
   const [pieces, setPieces] = useState<(GamePiece | null)[]>(() => generatePieceSet());
   const [isGameOver, setIsGameOver] = useState(false);
   const [clearingCells, setClearingCells] = useState<Set<string>>(new Set());
+  const [screenShake, setScreenShake] = useState(false);
+  
+  // Feedback systems
+  const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
+  const [particleTrigger, setParticleTrigger] = useState<{ x: number; y: number; color: string } | null>(null);
   
   const [draggingPiece, setDraggingPiece] = useState<GamePiece | null>(null);
   const [ghostPosition, setGhostPosition] = useState<{
@@ -93,7 +107,7 @@ const BlockBlastGame: React.FC = () => {
           draggingPiece.colorId
         );
         
-        // Handle line clears with animation
+        // Handle line clears with animation and feedback
         if (result.clear.linesCleared > 0) {
           const cellsToAnimate = new Set<string>();
           result.clear.clearedRows.forEach(row => {
@@ -108,9 +122,41 @@ const BlockBlastGame: React.FC = () => {
           });
           setClearingCells(cellsToAnimate);
           
+          // Trigger feedback
+          const clearMsg = getClearMessage(result.clear.linesCleared);
+          setFeedbackMessage(clearMsg);
+          
+          // Particles at board center
+          if (boardRef.current) {
+            const rect = boardRef.current.getBoundingClientRect();
+            setParticleTrigger({
+              x: rect.left + rect.width / 2,
+              y: rect.top + rect.height / 2,
+              color: '',
+            });
+          }
+          
+          // Haptic feedback
+          triggerHaptic(result.clear.linesCleared >= 2 ? 'heavy' : 'medium');
+          
+          // Screen shake for big clears
+          if (result.clear.linesCleared >= 2) {
+            setScreenShake(true);
+            setTimeout(() => setScreenShake(false), 300);
+          }
+          
           setTimeout(() => {
             setClearingCells(new Set());
+            
+            // Show combo message after clear message
+            const comboMsg = getComboMessage(result.next.combo);
+            if (comboMsg) {
+              setTimeout(() => setFeedbackMessage(comboMsg), 300);
+            }
           }, 300);
+        } else {
+          // Light haptic for placement
+          triggerHaptic('light');
         }
         
         setGameState(result.next);
@@ -186,48 +232,62 @@ const BlockBlastGame: React.FC = () => {
   }, []);
 
   return (
-    <div 
-      className="fixed inset-0 flex flex-col items-center overflow-hidden"
-      style={{
-        paddingTop: 'max(env(safe-area-inset-top), 16px)',
-        paddingBottom: 'max(env(safe-area-inset-bottom), 16px)',
-        paddingLeft: 'max(env(safe-area-inset-left), 12px)',
-        paddingRight: 'max(env(safe-area-inset-right), 12px)',
-      }}
-    >
-      {/* Score - Top */}
-      <div className="flex-shrink-0 pt-2">
-        <ScoreDisplay score={gameState.score} combo={gameState.combo} />
-      </div>
+    <>
+      {/* Particle effects layer */}
+      <ParticleEffect trigger={particleTrigger} count={16} />
       
-      {/* Board - Center, fills available space */}
-      <div className="flex-1 flex items-center justify-center w-full min-h-0 py-3">
-        <div ref={boardRef}>
-          <GameBoard
-            grid={gameState.grid}
-            ghostPosition={ghostPosition}
-            clearingCells={clearingCells}
-            onCellDrop={handleCellDrop}
-            onCellHover={handleCellHover}
-            onCellLeave={handleCellLeave}
+      {/* Feedback text overlay */}
+      <FeedbackText 
+        message={feedbackMessage} 
+        onComplete={() => setFeedbackMessage(null)} 
+      />
+      
+      <div 
+        className={cn(
+          "fixed inset-0 flex flex-col items-center overflow-hidden",
+          screenShake && "screen-shake"
+        )}
+        style={{
+          paddingTop: 'max(env(safe-area-inset-top), 16px)',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 16px)',
+          paddingLeft: 'max(env(safe-area-inset-left), 12px)',
+          paddingRight: 'max(env(safe-area-inset-right), 12px)',
+        }}
+      >
+        {/* Score - Top */}
+        <div className="flex-shrink-0 pt-2">
+          <AnimatedScore score={gameState.score} combo={gameState.combo} />
+        </div>
+        
+        {/* Board - Center, fills available space */}
+        <div className="flex-1 flex items-center justify-center w-full min-h-0 py-3">
+          <div ref={boardRef}>
+            <GameBoard
+              grid={gameState.grid}
+              ghostPosition={ghostPosition}
+              clearingCells={clearingCells}
+              onCellDrop={handleCellDrop}
+              onCellHover={handleCellHover}
+              onCellLeave={handleCellLeave}
+            />
+          </div>
+        </div>
+        
+        {/* Piece Tray - Bottom, fixed height */}
+        <div className="flex-shrink-0 w-full pb-2">
+          <PieceTray
+            pieces={pieces}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDrag={handleDrag}
           />
         </div>
+        
+        {isGameOver && (
+          <GameOverModal score={gameState.score} onRestart={handleRestart} />
+        )}
       </div>
-      
-      {/* Piece Tray - Bottom, fixed height */}
-      <div className="flex-shrink-0 w-full pb-2">
-        <PieceTray
-          pieces={pieces}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onDrag={handleDrag}
-        />
-      </div>
-      
-      {isGameOver && (
-        <GameOverModal score={gameState.score} onRestart={handleRestart} />
-      )}
-    </div>
+    </>
   );
 };
 
