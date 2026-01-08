@@ -15,13 +15,35 @@ import {
   GRID_SIZE,
   type EngineState,
 } from '@/lib/gameEngine';
-import { generatePieceSet, type GamePiece } from '@/lib/pieces';
+import { 
+  generateTrio, 
+  createInitialRngState, 
+  onGameOver as rngOnGameOver,
+  onGoodRun,
+  type RngState,
+  type GeneratedPiece,
+} from '@/lib/pieceRng';
 import { 
   getClearMessage, 
   getComboMessage, 
   triggerHaptic,
   type FeedbackMessage 
 } from '@/lib/feedback';
+
+// Convert RNG piece to GamePiece format
+interface GamePiece {
+  shape: number[][];
+  colorId: number;
+  id: string;
+}
+
+function rngPiecesToGamePieces(rngPieces: GeneratedPiece[]): GamePiece[] {
+  return rngPieces.map((p, i) => ({
+    shape: p.shape,
+    colorId: p.colorId,
+    id: `piece-${Date.now()}-${i}-${p.id}`,
+  }));
+}
 
 // ============================================
 // ARCHITECTURE: Anti-Bug Pattern
@@ -48,9 +70,26 @@ interface GhostState {
 }
 
 const BlockBlastGame: React.FC = () => {
+  // ========== RNG STATE ==========
+  const rngStateRef = useRef<RngState>(createInitialRngState());
+  
+  // Helper to generate pieces using RNG system
+  const generatePiecesWithRng = useCallback((state: EngineState) => {
+    const trio = generateTrio(
+      { score: state.score, movesSinceClear: state.movesSinceClear, grid: state.grid },
+      rngStateRef.current
+    );
+    // Debug info (remove in production)
+    console.log('[RNG Debug]', trio.debug);
+    return rngPiecesToGamePieces(trio.pieces);
+  }, []);
+
   // ========== GAME STATE (logical) ==========
   const [gameState, setGameState] = useState<EngineState>(createInitialState);
-  const [pieces, setPieces] = useState<(GamePiece | null)[]>(() => generatePieceSet());
+  const [pieces, setPieces] = useState<(GamePiece | null)[]>(() => {
+    const initialState = createInitialState();
+    return generatePiecesWithRng(initialState);
+  });
   const [isGameOver, setIsGameOver] = useState(false);
   const [clearingCells, setClearingCells] = useState<Set<string>>(new Set());
   const [screenShake, setScreenShake] = useState(false);
@@ -236,12 +275,13 @@ const BlockBlastGame: React.FC = () => {
       const remainingPieces = newPieces.filter(p => p !== null);
       
       if (remainingPieces.length === 0) {
-        const freshPieces = generatePieceSet();
+        const freshPieces = generatePiecesWithRng(result.next);
         setPieces(freshPieces);
         
         // Check game over with new pieces
         setTimeout(() => {
           if (checkGameOver(result.next, freshPieces)) {
+            rngOnGameOver(rngStateRef.current);
             setIsGameOver(true);
           }
         }, 100);
@@ -250,6 +290,7 @@ const BlockBlastGame: React.FC = () => {
         
         // Check game over with remaining pieces
         if (checkGameOver(result.next, newPieces)) {
+          rngOnGameOver(rngStateRef.current);
           setIsGameOver(true);
         }
       }
@@ -295,13 +336,16 @@ const BlockBlastGame: React.FC = () => {
   }, [handleDragEnd]);
 
   const handleRestart = useCallback(() => {
-    setGameState(createInitialState());
-    setPieces(generatePieceSet());
+    const initialState = createInitialState();
+    // Reset RNG state on restart, but keep tilt protection
+    onGoodRun(rngStateRef.current, gameState.score);
+    setGameState(initialState);
+    setPieces(generatePiecesWithRng(initialState));
     setIsGameOver(false);
     setClearingCells(new Set());
     setDragState(null);
     setGhostState(null);
-  }, []);
+  }, [gameState.score, generatePiecesWithRng]);
 
   // Transform ghostState to GameBoard format
   const ghostPosition = ghostState ? {
