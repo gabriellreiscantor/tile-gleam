@@ -15,13 +15,15 @@ const GameHUD: React.FC<GameHUDProps> = ({
 }) => {
   return (
     <div
-      className="w-full px-3 pt-2 select-none"
+      className="fixed left-0 right-0 top-0 z-50 w-full select-none"
       style={{
         paddingTop: "max(env(safe-area-inset-top), 12px)",
+        paddingLeft: "max(env(safe-area-inset-left), 12px)",
+        paddingRight: "max(env(safe-area-inset-right), 12px)",
       }}
     >
-      {/* Container RELATIVE + W-FULL para ABSOLUTE funcionar */}
-      <div className="relative w-full h-[72px]">
+      {/* Inner wrapper: max-w para não ficar gigante em desktop */}
+      <div className="relative mx-auto w-full max-w-[520px] h-[72px]">
         {/* LEFT — BEST */}
         <div className="absolute left-0 top-0 flex flex-col items-start">
           <div className="flex items-center gap-1">
@@ -30,7 +32,6 @@ const GameHUD: React.FC<GameHUDProps> = ({
               BEST
             </span>
           </div>
-
           <div className="mt-1 text-[18px] font-extrabold text-yellow-300 drop-shadow">
             {bestScore}
           </div>
@@ -41,12 +42,9 @@ const GameHUD: React.FC<GameHUDProps> = ({
           <div className="text-[11px] tracking-[0.25em] text-white/70">
             SCORE
           </div>
-
           <div className="mt-1 text-[34px] font-extrabold text-white drop-shadow">
             {score}
           </div>
-
-          {/* Combo só aparece quando > 1 */}
           {combo > 1 && (
             <div className="mt-0.5 text-[12px] font-bold text-cyan-300/90">
               🔥 x{combo}

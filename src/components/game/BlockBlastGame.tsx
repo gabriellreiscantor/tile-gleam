@@ -612,15 +612,16 @@ const BlockBlastGame: React.FC = () => {
           paddingRight: 'max(env(safe-area-inset-right), 12px)',
         }}
       >
-        {/* Header - HUD with Best Score, Current Score, Settings */}
-        <div className="flex-shrink-0 pt-2">
-          <GameHUD
-            score={gameState.score}
-            bestScore={playerResources.highScore}
-            combo={gameState.combo}
-            onOpenSettings={() => setShowSettingsModal(true)}
-          />
-        </div>
+        {/* HUD is fixed, so we just need a spacer to push content down */}
+        <div className="h-[84px] flex-shrink-0" />
+        
+        {/* Fixed HUD - rendered outside flow */}
+        <GameHUD
+          score={gameState.score}
+          bestScore={playerResources.highScore}
+          combo={gameState.combo}
+          onOpenSettings={() => setShowSettingsModal(true)}
+        />
         
         {/* Board - Center, fills available space */}
         <div className="flex-1 flex items-center justify-center w-full min-h-0 py-3">
