@@ -60,22 +60,23 @@ const FeedbackText: React.FC<FeedbackTextProps> = ({ message, messageKey, onComp
     <div
       className={cn(
         'fixed top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none',
-        'font-black tracking-tight flex items-center gap-2',
+        'font-black tracking-tight flex items-center gap-3',
         sizeClasses[message.intensity],
         colorClasses[message.color as keyof typeof colorClasses] || 'text-white',
         animating ? 'animate-feedback-in' : 'animate-feedback-out'
       )}
       style={{
         textShadow: message.color === 'rainbow'
-          ? '0 0 30px #fbbf24, 0 0 60px #f59e0b, 0 0 90px #d97706'
+          ? '0 2px 4px rgba(0,0,0,0.8), 0 0 30px #fbbf24, 0 0 60px #f59e0b, 0 0 90px #d97706'
           : message.intensity === 'epic' 
-          ? '0 0 40px currentColor, 0 0 80px currentColor'
+          ? '0 4px 8px rgba(0,0,0,0.9), 0 0 40px currentColor, 0 0 80px currentColor'
           : message.intensity === 'high'
-          ? '0 0 20px currentColor'
-          : '0 0 10px currentColor',
+          ? '0 3px 6px rgba(0,0,0,0.85), 0 0 25px currentColor, 0 0 50px currentColor'
+          : '0 2px 4px rgba(0,0,0,0.8), 0 0 15px currentColor, 0 0 30px currentColor',
+        WebkitTextStroke: message.intensity === 'epic' ? '2px rgba(0,0,0,0.5)' : '1px rgba(0,0,0,0.4)',
       }}
     >
-      <span>{message.emoji}</span>
+      <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{message.emoji}</span>
       <span>{message.text}</span>
     </div>
   );
