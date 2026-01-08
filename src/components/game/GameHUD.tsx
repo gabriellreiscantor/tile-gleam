@@ -64,7 +64,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
         </div>
         
         {/* RIGHT: Settings Button */}
-        <div className="min-w-[70px] flex justify-end">
+        <div className="min-w-[70px] flex justify-start md:justify-end">
           <button
             onClick={onOpenSettings}
             className={cn(
