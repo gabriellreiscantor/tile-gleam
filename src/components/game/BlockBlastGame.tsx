@@ -124,32 +124,37 @@ const BlockBlastGame: React.FC = () => {
   // History for undo
   const historyRef = useRef<{ state: EngineState; pieces: (GamePiece | null)[] }[]>([]);
   
-  // Preload sounds and start BGM on mount
+  // Track if user has interacted (for autoplay policy)
+  const hasInteractedRef = useRef(false);
+  
+  // Preload sounds on mount
   useEffect(() => {
     preloadSounds();
     
-    // Start BGM after first user interaction (browser requirement)
-    const startBGM = () => {
-      if (playerResources.musicEnabled) {
-        playBGM();
+    // Mark interaction and try to start BGM
+    const handleInteraction = () => {
+      if (!hasInteractedRef.current) {
+        hasInteractedRef.current = true;
+        // Try to start BGM immediately after interaction
+        setBGMEnabled(playerResources.musicEnabled);
       }
-      document.removeEventListener('click', startBGM);
-      document.removeEventListener('touchstart', startBGM);
     };
     
-    document.addEventListener('click', startBGM);
-    document.addEventListener('touchstart', startBGM);
+    document.addEventListener('click', handleInteraction);
+    document.addEventListener('touchstart', handleInteraction);
     
     return () => {
       stopBGM();
-      document.removeEventListener('click', startBGM);
-      document.removeEventListener('touchstart', startBGM);
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('touchstart', handleInteraction);
     };
-  }, []);
+  }, [playerResources.musicEnabled]);
   
-  // Sync BGM with musicEnabled setting
+  // Sync BGM with musicEnabled setting (only after user interaction)
   useEffect(() => {
-    setBGMEnabled(playerResources.musicEnabled);
+    if (hasInteractedRef.current) {
+      setBGMEnabled(playerResources.musicEnabled);
+    }
   }, [playerResources.musicEnabled]);
   
   // Save resources on change
