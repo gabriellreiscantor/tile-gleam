@@ -62,16 +62,25 @@ const Debug: React.FC = () => {
 
       {/* Clear Messages */}
       <Section title="📢 CLEAR MESSAGES">
-        <div className="flex flex-wrap gap-2 justify-center">
-          {[1, 2, 3, 4].map((lines) => (
-            <Button
-              key={lines}
-              variant="outline"
-              onClick={() => showFeedback(getClearMessage(lines))}
-            >
-              {lines} Linha{lines > 1 ? 's' : ''}
+        <div className="flex flex-col items-center gap-2">
+          {/* Linha 1: 1, 2, 3 Linhas */}
+          <div className="flex gap-2 justify-center">
+            {[1, 2, 3].map((lines) => (
+              <Button
+                key={lines}
+                variant="outline"
+                onClick={() => showFeedback(getClearMessage(lines))}
+              >
+                {lines} Linha{lines > 1 ? 's' : ''}
+              </Button>
+            ))}
+          </div>
+          {/* Linha 2: 4 Linhas centralizado */}
+          <div className="flex gap-2 justify-center">
+            <Button variant="outline" onClick={() => showFeedback(getClearMessage(4))}>
+              4 Linhas
             </Button>
-          ))}
+          </div>
         </div>
       </Section>
 
