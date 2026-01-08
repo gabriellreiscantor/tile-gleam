@@ -1,0 +1,223 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import FeedbackText from '@/components/game/FeedbackText';
+import ParticleEffect from '@/components/game/ParticleEffect';
+import AnimatedScore from '@/components/game/AnimatedScore';
+import {
+  getClearMessage,
+  getComboMessage,
+  getPerfectMessage,
+  getCloseMessage,
+  getPlaceMessage,
+  triggerHaptic,
+  type FeedbackMessage,
+} from '@/lib/feedback';
+
+const Debug: React.FC = () => {
+  const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
+  const [particleTrigger, setParticleTrigger] = useState<{ x: number; y: number; color: string } | null>(null);
+  const [score, setScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+
+  const showFeedback = (message: FeedbackMessage) => {
+    setFeedbackMessage(null);
+    setTimeout(() => setFeedbackMessage(message), 50);
+  };
+
+  const triggerParticles = (color: string) => {
+    setParticleTrigger(null);
+    setTimeout(() => {
+      setParticleTrigger({
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+        color,
+      });
+    }, 50);
+  };
+
+  return (
+    <div className="min-h-screen bg-background p-4 pb-20">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <Link to="/">
+          <Button variant="ghost" size="icon">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        </Link>
+        <h1 className="text-2xl font-bold">🔧 DEBUG MODE</h1>
+      </div>
+
+      {/* Feedback Display Area */}
+      <div className="relative h-32 mb-6 bg-muted/30 rounded-xl flex items-center justify-center border border-border">
+        <span className="text-muted-foreground text-sm">Área de Preview</span>
+        <FeedbackText message={feedbackMessage} onComplete={() => setFeedbackMessage(null)} />
+        <ParticleEffect trigger={particleTrigger} count={20} />
+      </div>
+
+      {/* Clear Messages */}
+      <Section title="📢 CLEAR MESSAGES">
+        <div className="flex flex-wrap gap-2">
+          {[1, 2, 3, 4].map((lines) => (
+            <Button
+              key={lines}
+              variant="outline"
+              onClick={() => showFeedback(getClearMessage(lines))}
+            >
+              {lines} Linha{lines > 1 ? 's' : ''}
+            </Button>
+          ))}
+        </div>
+      </Section>
+
+      {/* Combo Messages */}
+      <Section title="🔥 COMBO MESSAGES">
+        <div className="flex flex-wrap gap-2">
+          {[2, 3, 4, 5, 6].map((c) => {
+            const msg = getComboMessage(c);
+            return (
+              <Button
+                key={c}
+                variant="outline"
+                onClick={() => {
+                  if (msg) {
+                    showFeedback(msg);
+                    setCombo(c);
+                  }
+                }}
+              >
+                x{c} Combo
+              </Button>
+            );
+          })}
+          <Button variant="ghost" size="sm" onClick={() => setCombo(0)}>
+            Reset Combo
+          </Button>
+        </div>
+      </Section>
+
+      {/* Special Messages */}
+      <Section title="⭐ SPECIAL MESSAGES">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            className="border-yellow-500/50"
+            onClick={() => showFeedback(getPerfectMessage())}
+          >
+            🏆 PERFECT!
+          </Button>
+          <Button
+            variant="outline"
+            className="border-red-500/50"
+            onClick={() => showFeedback(getCloseMessage())}
+          >
+            😰 Careful!
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => showFeedback(getPlaceMessage())}
+          >
+            👍 Nice Place
+          </Button>
+        </div>
+      </Section>
+
+      {/* Particles */}
+      <Section title="💥 PARTICLES">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            className="border-cyan-500/50"
+            onClick={() => triggerParticles('#22d3ee')}
+          >
+            Cyan
+          </Button>
+          <Button
+            variant="outline"
+            className="border-yellow-500/50"
+            onClick={() => triggerParticles('#facc15')}
+          >
+            Yellow
+          </Button>
+          <Button
+            variant="outline"
+            className="border-orange-500/50"
+            onClick={() => triggerParticles('#f97316')}
+          >
+            Orange
+          </Button>
+          <Button
+            variant="outline"
+            className="border-purple-500/50"
+            onClick={() => triggerParticles('#a855f7')}
+          >
+            Purple
+          </Button>
+          <Button
+            variant="outline"
+            className="border-pink-500/50"
+            onClick={() => triggerParticles('#ec4899')}
+          >
+            Rainbow
+          </Button>
+        </div>
+      </Section>
+
+      {/* Score */}
+      <Section title="🎯 ANIMATED SCORE">
+        <div className="flex items-center gap-6 mb-4">
+          <AnimatedScore score={score} combo={combo} />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setScore((s) => s + 100)}>
+            +100
+          </Button>
+          <Button variant="outline" onClick={() => setScore((s) => s + 500)}>
+            +500
+          </Button>
+          <Button variant="outline" onClick={() => setScore((s) => s + 1000)}>
+            +1000
+          </Button>
+          <Button variant="ghost" onClick={() => setScore(0)}>
+            Reset
+          </Button>
+        </div>
+      </Section>
+
+      {/* Haptics */}
+      <Section title="📳 HAPTICS (mobile)">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => triggerHaptic('light')}>
+            Light
+          </Button>
+          <Button variant="outline" onClick={() => triggerHaptic('medium')}>
+            Medium
+          </Button>
+          <Button variant="outline" onClick={() => triggerHaptic('heavy')}>
+            Heavy
+          </Button>
+          <Button variant="outline" onClick={() => triggerHaptic('success')}>
+            Success
+          </Button>
+          <Button variant="outline" onClick={() => triggerHaptic('warning')}>
+            Warning
+          </Button>
+          <Button variant="outline" onClick={() => triggerHaptic('error')}>
+            Error
+          </Button>
+        </div>
+      </Section>
+    </div>
+  );
+};
+
+// Helper component for sections
+const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+  <div className="mb-6">
+    <h2 className="text-sm font-semibold text-muted-foreground mb-3">{title}</h2>
+    {children}
+  </div>
+);
+
+export default Debug;
