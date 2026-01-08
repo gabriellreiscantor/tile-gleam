@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { ContinueEligibility } from '@/lib/playerResources';
-import { showRewardedAd, isRewardedAdReady } from '@/lib/adService';
+import { showRewardedAd } from '@/lib/adService';
+import { 
+  CONTINUE_CRYSTAL_COST, 
+  canAffordCrystalContinue,
+  type ItemResources 
+} from '@/lib/collectibles';
 
 interface ContinueModalProps {
   isOpen: boolean;
   score: number;
   eligibility: ContinueEligibility;
+  itemResources: ItemResources;
   onContinueFree: () => void;
   onContinuePaid: () => void;
   onContinueAd: () => void;
+  onContinueCrystal: () => void;
   onDecline: () => void;
 }
 
@@ -17,9 +24,11 @@ const ContinueModal: React.FC<ContinueModalProps> = ({
   isOpen,
   score,
   eligibility,
+  itemResources,
   onContinueFree,
   onContinuePaid,
   onContinueAd,
+  onContinueCrystal,
   onDecline,
 }) => {
   const [isLoadingAd, setIsLoadingAd] = useState(false);
@@ -28,6 +37,7 @@ const ContinueModal: React.FC<ContinueModalProps> = ({
   if (!isOpen) return null;
 
   const { state, hasPaidContinue, canWatchAd } = eligibility;
+  const canUseCrystals = canAffordCrystalContinue(itemResources);
 
   const handleWatchAd = async () => {
     setIsLoadingAd(true);
@@ -177,8 +187,32 @@ const ContinueModal: React.FC<ContinueModalProps> = ({
                 
                 {adError && (
                   <p className="text-red-400 text-sm text-center -mt-1">
-                    {adError}. Try again or use paid continue.
+                    {adError}. Try again or use crystals.
                   </p>
+                )}
+                
+                {/* Crystal Continue Option */}
+                {canUseCrystals && (
+                  <button
+                    onClick={onContinueCrystal}
+                    className={cn(
+                      "w-full py-4 px-6 rounded-2xl font-bold text-[16px]",
+                      "bg-gradient-to-b from-[#8b5cf6] to-[#7c3aed]",
+                      "text-white",
+                      "active:scale-[0.97] transition-all duration-150",
+                      "relative overflow-hidden"
+                    )}
+                    style={{
+                      boxShadow: '0 6px 24px rgba(139, 92, 246, 0.35), inset 0 1px 0 rgba(255,255,255,0.2)',
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/10 pointer-events-none" />
+                    <div className="flex items-center justify-center gap-2 relative">
+                      <span className="text-xl">💎</span>
+                      <span>Use {CONTINUE_CRYSTAL_COST} Crystals</span>
+                      <span className="text-white/60 text-sm">({itemResources.crystals})</span>
+                    </div>
+                  </button>
                 )}
                 
                 {hasPaidContinue && (
@@ -219,6 +253,30 @@ const ContinueModal: React.FC<ContinueModalProps> = ({
             {/* STATE 3: Paid Only (No Ads Available) */}
             {state === 'paid-only' && (
               <>
+                {/* Crystal Continue Option */}
+                {canUseCrystals && (
+                  <button
+                    onClick={onContinueCrystal}
+                    className={cn(
+                      "w-full py-4 px-6 rounded-2xl font-bold text-[17px]",
+                      "bg-gradient-to-b from-[#8b5cf6] to-[#7c3aed]",
+                      "text-white",
+                      "active:scale-[0.97] transition-all duration-150",
+                      "relative overflow-hidden"
+                    )}
+                    style={{
+                      boxShadow: '0 8px 32px rgba(139, 92, 246, 0.35), inset 0 1px 0 rgba(255,255,255,0.2)',
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/10 pointer-events-none" />
+                    <div className="flex items-center justify-center gap-2 relative">
+                      <span className="text-xl">💎</span>
+                      <span>Use {CONTINUE_CRYSTAL_COST} Crystals</span>
+                      <span className="text-white/60 text-sm">({itemResources.crystals})</span>
+                    </div>
+                  </button>
+                )}
+              
                 {hasPaidContinue && (
                   <button
                     onClick={onContinuePaid}

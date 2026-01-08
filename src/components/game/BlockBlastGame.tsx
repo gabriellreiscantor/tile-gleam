@@ -10,6 +10,7 @@ import UndoButton from './UndoButton';
 import FeedbackText from './FeedbackText';
 import ParticleEffect from './ParticleEffect';
 import TutorialOverlay from './TutorialOverlay';
+import CollectAnimation from './CollectAnimation';
 import {
   createInitialState,
   createEmptyGrid,
@@ -53,6 +54,19 @@ import {
   isValidTutorialDrop,
   type TutorialState,
 } from '@/lib/tutorial';
+import {
+  createEmptyItemGrid,
+  spawnItemsForPiece,
+  collectItemsFromClears,
+  loadItemResources,
+  saveItemResources,
+  addCollectedItems,
+  spendCrystalsForContinue,
+  canAffordCrystalContinue,
+  type ItemGrid,
+  type ItemResources,
+  type CollectedItem,
+} from '@/lib/collectibles';
 import { preloadSounds, sounds, playBGM, stopBGM, setBGMEnabled, unlockAudioContext } from '@/lib/sounds';
 
 // Convert RNG piece to GamePiece format
@@ -117,15 +131,24 @@ const BlockBlastGame: React.FC = () => {
     const resources = loadResources();
     return startNewGame(resources);
   });
+  
+  // ========== ITEM RESOURCES ==========
+  const [itemResources, setItemResources] = useState<ItemResources>(loadItemResources);
+  const [itemGrid, setItemGrid] = useState<ItemGrid>(() => createEmptyItemGrid());
+  const [pendingCollection, setPendingCollection] = useState<CollectedItem[]>([]);
+  
   const [showContinueModal, setShowContinueModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [lastMoveHadClear, setLastMoveHadClear] = useState(false);
   
   // History for undo
-  const historyRef = useRef<{ state: EngineState; pieces: (GamePiece | null)[] }[]>([]);
+  const historyRef = useRef<{ state: EngineState; pieces: (GamePiece | null)[]; itemGrid: ItemGrid }[]>([]);
   
   // Track if user has interacted (for autoplay policy)
   const hasInteractedRef = useRef(false);
+  
+  // Board ref for collection animation
+  const boardRef = useRef<HTMLDivElement>(null);
   
   // Preload sounds on mount
   useEffect(() => {
@@ -167,6 +190,11 @@ const BlockBlastGame: React.FC = () => {
   useEffect(() => {
     saveResources(playerResources);
   }, [playerResources]);
+  
+  // Save item resources on change
+  useEffect(() => {
+    saveItemResources(itemResources);
+  }, [itemResources]);
   
   // Helper to generate pieces using RNG system
   const generatePiecesWithRng = useCallback((state: EngineState) => {
@@ -223,8 +251,6 @@ const BlockBlastGame: React.FC = () => {
       setFeedbackKey(k => k + 1);
     }, 50);
   }, []);
-  
-  const boardRef = useRef<HTMLDivElement>(null);
 
   // ========== HELPERS ==========
   const getBoardMetrics = useCallback(() => {
@@ -345,6 +371,7 @@ const BlockBlastGame: React.FC = () => {
       historyRef.current.push({
         state: { ...gameState },
         pieces: [...pieces],
+        itemGrid: itemGrid.map(row => [...row]),
       });
       if (historyRef.current.length > 3) {
         historyRef.current.shift();
@@ -368,7 +395,41 @@ const BlockBlastGame: React.FC = () => {
         setTutorial(advanceTutorial); // -> 'reward'
       }
       
+      // Spawn items on placed blocks (skip in tutorial)
+      let newItemGrid = itemGrid;
+      if (!tutorial.isActive) {
+        const gridOccupancy = getGridOccupancy(result.next.grid);
+        const isTilt = playerResources.totalGamesPlayed > 3 && result.next.score < 50;
+        newItemGrid = spawnItemsForPiece(
+          itemGrid,
+          piece.shape,
+          gridX,
+          gridY,
+          { gridOccupancy, isTilt }
+        );
+      }
+      
       if (hadClear) {
+        // Collect items from cleared lines
+        if (!tutorial.isActive) {
+          const collectionResult = collectItemsFromClears(
+            newItemGrid,
+            result.clear.clearedRows,
+            result.clear.clearedCols
+          );
+          
+          if (collectionResult.collected.length > 0) {
+            // Trigger collection animation
+            setPendingCollection(collectionResult.collected);
+            // Update item resources
+            setItemResources(prev => addCollectedItems(prev, collectionResult.collected));
+            // Update item grid
+            newItemGrid = collectionResult.newItemGrid;
+            // Play collection sound
+            sounds.success(playerResources.soundEnabled);
+          }
+        }
+        
         const cellsToAnimate = new Set<string>();
         result.clear.clearedRows.forEach(row => {
           for (let col = 0; col < GRID_SIZE; col++) {
@@ -385,7 +446,15 @@ const BlockBlastGame: React.FC = () => {
         // Skip normal feedback in tutorial - the overlay handles it
         if (!tutorial.isActive) {
           const clearMsg = getClearMessage(result.clear.linesCleared);
-          showFeedback(clearMsg);
+          // Add multi-line bonus info to feedback
+          if (result.score.multiLineBonus > 0) {
+            showFeedback({
+              ...clearMsg,
+              text: `${clearMsg.text} +${result.score.multiLineBonus}`,
+            });
+          } else {
+            showFeedback(clearMsg);
+          }
           
           // Play clear/combo sound
           if (result.next.combo > 1) {
@@ -427,6 +496,7 @@ const BlockBlastGame: React.FC = () => {
       }
       
       setGameState(result.next);
+      setItemGrid(newItemGrid);
       
       // Remove used piece
       const newPieces = pieces.map(p => 
@@ -460,7 +530,7 @@ const BlockBlastGame: React.FC = () => {
     
     setDragState(null);
     setGhostState(null);
-  }, [dragState, ghostState, gameState, pieces, tutorial, checkGameOver, getBoardMetrics, generatePiecesWithRng]);
+  }, [dragState, ghostState, gameState, pieces, itemGrid, tutorial, checkGameOver, getBoardMetrics, generatePiecesWithRng, playerResources, showFeedback]);
 
   // ========== GAME OVER FLOW ==========
   const handleGameOver = useCallback((finalState: EngineState) => {
@@ -475,7 +545,7 @@ const BlockBlastGame: React.FC = () => {
     // Update high score
     setPlayerResources(prev => updateHighScore(prev, finalState.score));
     
-    if (eligibility.canOffer) {
+    if (eligibility.canOffer || canAffordCrystalContinue(itemResources)) {
       // Show continue modal instead of game over
       setShowContinueModal(true);
     } else {
@@ -484,7 +554,7 @@ const BlockBlastGame: React.FC = () => {
       sounds.gameOver(playerResources.soundEnabled);
       setIsGameOver(true);
     }
-  }, [playerResources]);
+  }, [playerResources, itemResources]);
 
   const handleContinueFree = useCallback(() => {
     setPlayerResources(prev => useContinue(prev, 'free'));
@@ -494,7 +564,7 @@ const BlockBlastGame: React.FC = () => {
     triggerHaptic('success');
     sounds.success(playerResources.soundEnabled);
     showFeedback({ text: 'CONTINUE!', emoji: '🎁', intensity: 'high', color: 'green' });
-  }, [gameState, generatePiecesWithRng, playerResources.soundEnabled]);
+  }, [gameState, generatePiecesWithRng, playerResources.soundEnabled, showFeedback]);
 
   const handleContinuePaid = useCallback(() => {
     setPlayerResources(prev => useContinue(prev, 'paid'));
@@ -505,7 +575,7 @@ const BlockBlastGame: React.FC = () => {
     triggerHaptic('success');
     sounds.success(playerResources.soundEnabled);
     showFeedback({ text: 'CONTINUE!', emoji: '🔁', intensity: 'high', color: 'green' });
-  }, [gameState, generatePiecesWithRng, playerResources.soundEnabled]);
+  }, [gameState, generatePiecesWithRng, playerResources.soundEnabled, showFeedback]);
 
   const handleContinueAd = useCallback(() => {
     // In real app, show rewarded ad here
@@ -517,7 +587,17 @@ const BlockBlastGame: React.FC = () => {
     triggerHaptic('success');
     sounds.success(playerResources.soundEnabled);
     showFeedback({ text: 'CONTINUE!', emoji: '🎬', intensity: 'high', color: 'green' });
-  }, [gameState, generatePiecesWithRng, playerResources.soundEnabled]);
+  }, [gameState, generatePiecesWithRng, playerResources.soundEnabled, showFeedback]);
+
+  const handleContinueCrystal = useCallback(() => {
+    setItemResources(prev => spendCrystalsForContinue(prev));
+    setShowContinueModal(false);
+    const freshPieces = generatePiecesWithRng(gameState);
+    setPieces(freshPieces);
+    triggerHaptic('success');
+    sounds.success(playerResources.soundEnabled);
+    showFeedback({ text: 'CONTINUE!', emoji: '💎', intensity: 'high', color: 'purple' });
+  }, [gameState, generatePiecesWithRng, playerResources.soundEnabled, showFeedback]);
 
   const handleDeclineContinue = useCallback(() => {
     setShowContinueModal(false);
@@ -535,12 +615,13 @@ const BlockBlastGame: React.FC = () => {
     const lastState = historyRef.current.pop()!;
     setGameState(lastState.state);
     setPieces(lastState.pieces);
+    setItemGrid(lastState.itemGrid);
     setPlayerResources(prev => useUndo(prev));
     setLastMoveHadClear(false);
     triggerHaptic('medium');
     sounds.click(playerResources.soundEnabled);
     showFeedback({ text: 'UNDO!', emoji: '↩️', intensity: 'medium', color: 'cyan' });
-  }, [playerResources.soundEnabled]);
+  }, [playerResources.soundEnabled, showFeedback]);
 
   const handleBuyUndo = useCallback(() => {
     // In real app, show IAP purchase flow
@@ -589,6 +670,7 @@ const BlockBlastGame: React.FC = () => {
     setLastMoveHadClear(false);
     setGameState(initialState);
     setPieces(generatePiecesWithRng(initialState));
+    setItemGrid(createEmptyItemGrid());
     setIsGameOver(false);
     setShowContinueModal(false);
     setClearingCells(new Set());
@@ -622,6 +704,7 @@ const BlockBlastGame: React.FC = () => {
           const freshState = createInitialState();
           setGameState(freshState);
           setPieces(generatePiecesWithRng(freshState));
+          setItemGrid(createEmptyItemGrid());
         }, 100);
       }
       
@@ -639,6 +722,9 @@ const BlockBlastGame: React.FC = () => {
                `${tutorial.targetGridPosition.x + 2}-${tutorial.targetGridPosition.y}`])
     : null;
 
+  // Get board metrics for collection animation
+  const boardMetrics = getBoardMetrics();
+
   return (
     <>
       {/* Particle effects layer */}
@@ -650,6 +736,19 @@ const BlockBlastGame: React.FC = () => {
         messageKey={feedbackKey}
         onComplete={() => setFeedbackMessage(null)} 
       />
+      
+      {/* Item collection animation */}
+      {pendingCollection.length > 0 && boardMetrics && (
+        <CollectAnimation
+          items={pendingCollection}
+          cellSize={boardMetrics.cellSize}
+          boardLeft={boardMetrics.left}
+          boardTop={boardMetrics.top}
+          targetX={window.innerWidth - 80}
+          targetY={40}
+          onComplete={() => setPendingCollection([])}
+        />
+      )}
       
       {/* Tutorial overlay */}
       {tutorial.isActive && (
@@ -680,6 +779,7 @@ const BlockBlastGame: React.FC = () => {
           score={gameState.score}
           bestScore={playerResources.highScore}
           combo={gameState.combo}
+          itemResources={itemResources}
           onOpenSettings={() => setShowSettingsModal(true)}
         />
         
@@ -688,6 +788,7 @@ const BlockBlastGame: React.FC = () => {
           <div ref={boardRef}>
             <GameBoard
               grid={gameState.grid}
+              itemGrid={itemGrid}
               ghostPosition={ghostPosition}
               clearingCells={clearingCells}
               tutorialTargetCells={tutorialTargetCells}
@@ -749,9 +850,11 @@ const BlockBlastGame: React.FC = () => {
             getGridOccupancy(gameState.grid),
             tutorial.isActive
           )}
+          itemResources={itemResources}
           onContinueFree={handleContinueFree}
           onContinuePaid={handleContinuePaid}
           onContinueAd={handleContinueAd}
+          onContinueCrystal={handleContinueCrystal}
           onDecline={handleDeclineContinue}
         />
         
