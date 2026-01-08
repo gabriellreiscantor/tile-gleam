@@ -45,7 +45,8 @@ const FeedbackText: React.FC<FeedbackTextProps> = ({ message, onComplete }) => {
     purple: 'text-purple-400',
     accent: 'text-accent',
     destructive: 'text-destructive',
-    rainbow: 'bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500 bg-clip-text text-transparent',
+    rainbow: 'text-amber-300',
+    green: 'text-green-400',
   };
 
   return (
@@ -58,7 +59,9 @@ const FeedbackText: React.FC<FeedbackTextProps> = ({ message, onComplete }) => {
         animating ? 'animate-feedback-in' : 'animate-feedback-out'
       )}
       style={{
-        textShadow: message.intensity === 'epic' 
+        textShadow: message.color === 'rainbow'
+          ? '0 0 30px #fbbf24, 0 0 60px #f59e0b, 0 0 90px #d97706'
+          : message.intensity === 'epic' 
           ? '0 0 40px currentColor, 0 0 80px currentColor'
           : message.intensity === 'high'
           ? '0 0 20px currentColor'
