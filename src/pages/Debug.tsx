@@ -42,7 +42,7 @@ const Debug: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 pb-20">
+    <div className="fixed inset-0 bg-background p-4 pb-20 overflow-y-auto overflow-x-hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Link to="/">
