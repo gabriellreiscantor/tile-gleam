@@ -19,10 +19,16 @@ const SOUND_URLS = {
   error: 'https://cdn.freesound.org/previews/142/142608_1840739-lq.mp3',
 } as const;
 
+// BGM URL - calm puzzle game music
+const BGM_URL = 'https://cdn.freesound.org/previews/612/612095_5674468-lq.mp3';
+
 type SoundType = keyof typeof SOUND_URLS;
 
 // Audio cache to avoid re-downloading
 const audioCache = new Map<SoundType, HTMLAudioElement>();
+
+// BGM audio instance
+let bgmAudio: HTMLAudioElement | null = null;
 
 // Preload all sounds
 export function preloadSounds(): void {
@@ -32,6 +38,12 @@ export function preloadSounds(): void {
     audio.volume = 0.5;
     audioCache.set(key as SoundType, audio);
   });
+  
+  // Preload BGM
+  bgmAudio = new Audio(BGM_URL);
+  bgmAudio.preload = 'auto';
+  bgmAudio.loop = true;
+  bgmAudio.volume = 0.25;
 }
 
 // Play a sound effect
@@ -60,6 +72,49 @@ export function playSound(type: SoundType, volume = 0.5): void {
 export function playSoundIfEnabled(type: SoundType, soundEnabled: boolean, volume = 0.5): void {
   if (soundEnabled) {
     playSound(type, volume);
+  }
+}
+
+// ========== BGM FUNCTIONS ==========
+
+export function playBGM(): void {
+  if (!bgmAudio) {
+    bgmAudio = new Audio(BGM_URL);
+    bgmAudio.loop = true;
+    bgmAudio.volume = 0.25;
+  }
+  
+  bgmAudio.play().catch(e => {
+    console.debug('BGM play failed:', e);
+  });
+}
+
+export function stopBGM(): void {
+  if (bgmAudio) {
+    bgmAudio.pause();
+    bgmAudio.currentTime = 0;
+  }
+}
+
+export function pauseBGM(): void {
+  if (bgmAudio) {
+    bgmAudio.pause();
+  }
+}
+
+export function resumeBGM(): void {
+  if (bgmAudio && bgmAudio.paused) {
+    bgmAudio.play().catch(e => {
+      console.debug('BGM resume failed:', e);
+    });
+  }
+}
+
+export function setBGMEnabled(enabled: boolean): void {
+  if (enabled) {
+    playBGM();
+  } else {
+    stopBGM();
   }
 }
 
