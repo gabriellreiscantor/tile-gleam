@@ -8,19 +8,19 @@ const isNative = Capacitor.isNativePlatform();
 
 // Sound asset paths (for native) and URLs (for web fallback)
 const SOUND_ASSETS = {
-  click: { path: 'public/assets/sounds/click.mp3', url: 'https://cdn.freesound.org/previews/171/171671_2437358-lq.mp3' },
-  drop: { path: 'public/assets/sounds/drop.mp3', url: 'https://cdn.freesound.org/previews/270/270304_5123851-lq.mp3' },
-  clear: { path: 'public/assets/sounds/clear.mp3', url: 'https://cdn.freesound.org/previews/341/341695_5858296-lq.mp3' },
-  combo: { path: 'public/assets/sounds/combo.mp3', url: 'https://cdn.freesound.org/previews/270/270545_5123851-lq.mp3' },
-  gameOver: { path: 'public/assets/sounds/gameover.mp3', url: 'https://cdn.freesound.org/previews/277/277403_4804865-lq.mp3' },
-  levelUp: { path: 'public/assets/sounds/levelup.mp3', url: 'https://cdn.freesound.org/previews/270/270528_5123851-lq.mp3' },
-  success: { path: 'public/assets/sounds/success.mp3', url: 'https://cdn.freesound.org/previews/270/270404_5123851-lq.mp3' },
-  error: { path: 'public/assets/sounds/error.mp3', url: 'https://cdn.freesound.org/previews/142/142608_1840739-lq.mp3' },
+  click: { path: 'assets/sounds/click.mp3', url: '/assets/sounds/click.mp3' },
+  drop: { path: 'assets/sounds/drop.mp3', url: '/assets/sounds/drop.mp3' },
+  clear: { path: 'assets/sounds/clear.mp3', url: '/assets/sounds/clear.mp3' },
+  combo: { path: 'assets/sounds/combo.mp3', url: '/assets/sounds/combo.mp3' },
+  gameOver: { path: 'assets/sounds/gameover.mp3', url: '/assets/sounds/gameover.mp3' },
+  levelUp: { path: 'assets/sounds/levelup.mp3', url: '/assets/sounds/levelup.mp3' },
+  success: { path: 'assets/sounds/success.mp3', url: '/assets/sounds/success.mp3' },
+  error: { path: 'assets/sounds/error.mp3', url: '/assets/sounds/error.mp3' },
 } as const;
 
 const BGM_ASSET = {
-  path: 'public/assets/sounds/bgm.mp3',
-  url: 'https://cdn.pixabay.com/audio/2024/11/01/audio_073aborfc3.mp3'
+  path: 'assets/sounds/bgm.mp3',
+  url: '/assets/sounds/bgm.mp3'
 };
 
 type SoundType = keyof typeof SOUND_ASSETS;
