@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import FeedbackText from '@/components/game/FeedbackText';
 import ParticleEffect from '@/components/game/ParticleEffect';
 import AnimatedScore from '@/components/game/AnimatedScore';
+import ContinueModal from '@/components/game/ContinueModal';
 import {
   getClearMessage,
   getComboMessage,
@@ -14,12 +15,15 @@ import {
   triggerHaptic,
   type FeedbackMessage,
 } from '@/lib/feedback';
+import type { ContinueEligibility } from '@/lib/playerResources';
 
 const Debug: React.FC = () => {
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
   const [particleTrigger, setParticleTrigger] = useState<{ x: number; y: number; color: string } | null>(null);
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
+  const [showContinueModal, setShowContinueModal] = useState(false);
+  const [continueState, setContinueState] = useState<'free' | 'ad' | 'paid-only'>('free');
 
   const showFeedback = (message: FeedbackMessage) => {
     setFeedbackMessage(null);
@@ -208,6 +212,70 @@ const Debug: React.FC = () => {
           </Button>
         </div>
       </Section>
+
+      {/* Continue Modal */}
+      <Section title="💀 CONTINUE MODAL (Game Over)">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            className="border-green-500/50"
+            onClick={() => {
+              setContinueState('free');
+              setShowContinueModal(true);
+            }}
+          >
+            Free Continue
+          </Button>
+          <Button
+            variant="outline"
+            className="border-orange-500/50"
+            onClick={() => {
+              setContinueState('ad');
+              setShowContinueModal(true);
+            }}
+          >
+            Ad Available
+          </Button>
+          <Button
+            variant="outline"
+            className="border-purple-500/50"
+            onClick={() => {
+              setContinueState('paid-only');
+              setShowContinueModal(true);
+            }}
+          >
+            Paid Only
+          </Button>
+        </div>
+      </Section>
+
+      {/* Continue Modal Component */}
+      <ContinueModal
+        isOpen={showContinueModal}
+        score={score || 1248}
+        eligibility={{
+          canOffer: true,
+          state: continueState,
+          hasPaidContinue: true,
+          canWatchAd: continueState === 'ad',
+        } as ContinueEligibility}
+        onContinueFree={() => {
+          setShowContinueModal(false);
+          showFeedback({ text: 'FREE CONTINUE!', emoji: '🎁', intensity: 'high', color: 'green' });
+        }}
+        onContinuePaid={() => {
+          setShowContinueModal(false);
+          showFeedback({ text: 'PAID CONTINUE!', emoji: '💰', intensity: 'high', color: 'green' });
+        }}
+        onContinueAd={() => {
+          setShowContinueModal(false);
+          showFeedback({ text: 'AD CONTINUE!', emoji: '🎬', intensity: 'high', color: 'green' });
+        }}
+        onDecline={() => {
+          setShowContinueModal(false);
+          showFeedback({ text: 'GAME OVER', emoji: '💀', intensity: 'medium', color: 'red' });
+        }}
+      />
     </div>
   );
 };
