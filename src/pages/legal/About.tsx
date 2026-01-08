@@ -56,12 +56,12 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
         <div className="flex items-center gap-2 text-white/40 text-sm">
           <span>Made with</span>
           <Heart className="w-4 h-4 text-red-400 fill-red-400" />
-          <span>for puzzle lovers</span>
+          <span>by Savini Comunicação</span>
         </div>
 
         {/* Copyright */}
         <p className="mt-4 text-white/30 text-xs">
-          © 2025 Block Puzzle. All rights reserved.
+          © 2025 Savini Comunicação. All rights reserved.
         </p>
 
         <div className="h-4" />
