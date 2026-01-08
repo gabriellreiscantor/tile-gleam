@@ -1,15 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { X, Volume2, VolumeX, Music, Music2, RotateCcw, Shield, FileText } from 'lucide-react';
+import { X, Volume2, VolumeX, Music, Music2, Smartphone, Play, Gamepad2, Settings2 } from 'lucide-react';
+import MoreSettingsModal from './MoreSettingsModal';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   soundEnabled: boolean;
   musicEnabled: boolean;
+  vibrationEnabled: boolean;
   onToggleSound: () => void;
   onToggleMusic: () => void;
-  onRestorePurchases: () => void;
+  onToggleVibration: () => void;
+  onReplay: () => void;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -17,141 +20,189 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   soundEnabled,
   musicEnabled,
+  vibrationEnabled,
   onToggleSound,
   onToggleMusic,
-  onRestorePurchases,
+  onToggleVibration,
+  onReplay,
 }) => {
+  const [showMoreSettings, setShowMoreSettings] = useState(false);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      
-      {/* Modal */}
-      <div className="relative w-[320px] bg-gradient-to-b from-slate-800 to-slate-900 rounded-3xl border border-white/10 shadow-2xl overflow-hidden animate-scale-in">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-          <h2 className="text-xl font-bold text-white">Settings</h2>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
-          >
-            <X className="w-5 h-5 text-white/70" />
-          </button>
-        </div>
+    <>
+      <div className="fixed inset-0 z-[70] flex items-center justify-center">
+        {/* Backdrop */}
+        <div 
+          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          onClick={onClose}
+        />
         
-        {/* Content */}
-        <div className="p-4 space-y-3">
-          {/* Sound Toggle */}
-          <button
-            onClick={onToggleSound}
-            className={cn(
-              "w-full flex items-center gap-4 p-4 rounded-2xl transition-all",
-              soundEnabled 
-                ? "bg-emerald-500/20 border border-emerald-500/30" 
-                : "bg-white/5 border border-white/10"
-            )}
-          >
-            <div className={cn(
-              "w-12 h-12 rounded-xl flex items-center justify-center",
-              soundEnabled ? "bg-emerald-500" : "bg-white/10"
-            )}>
-              {soundEnabled ? (
-                <Volume2 className="w-6 h-6 text-white" />
-              ) : (
-                <VolumeX className="w-6 h-6 text-white/50" />
-              )}
-            </div>
-            <div className="flex-1 text-left">
-              <div className="font-semibold text-white">Sound Effects</div>
-              <div className="text-sm text-white/50">{soundEnabled ? 'On' : 'Off'}</div>
-            </div>
-            <div className={cn(
-              "w-12 h-7 rounded-full transition-colors relative",
-              soundEnabled ? "bg-emerald-500" : "bg-white/20"
-            )}>
-              <div className={cn(
-                "absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-transform",
-                soundEnabled ? "translate-x-6" : "translate-x-1"
-              )} />
-            </div>
-          </button>
-          
-          {/* Music Toggle */}
-          <button
-            onClick={onToggleMusic}
-            className={cn(
-              "w-full flex items-center gap-4 p-4 rounded-2xl transition-all",
-              musicEnabled 
-                ? "bg-purple-500/20 border border-purple-500/30" 
-                : "bg-white/5 border border-white/10"
-            )}
-          >
-            <div className={cn(
-              "w-12 h-12 rounded-xl flex items-center justify-center",
-              musicEnabled ? "bg-purple-500" : "bg-white/10"
-            )}>
-              {musicEnabled ? (
-                <Music className="w-6 h-6 text-white" />
-              ) : (
-                <Music2 className="w-6 h-6 text-white/50" />
-              )}
-            </div>
-            <div className="flex-1 text-left">
-              <div className="font-semibold text-white">Music</div>
-              <div className="text-sm text-white/50">{musicEnabled ? 'On' : 'Off'}</div>
-            </div>
-            <div className={cn(
-              "w-12 h-7 rounded-full transition-colors relative",
-              musicEnabled ? "bg-purple-500" : "bg-white/20"
-            )}>
-              <div className={cn(
-                "absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-transform",
-                musicEnabled ? "translate-x-6" : "translate-x-1"
-              )} />
-            </div>
-          </button>
-          
-          {/* Divider */}
-          <div className="h-px bg-white/10 my-2" />
-          
-          {/* Restore Purchases */}
-          <button
-            onClick={onRestorePurchases}
-            className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-          >
-            <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-              <RotateCcw className="w-6 h-6 text-amber-400" />
-            </div>
-            <div className="flex-1 text-left">
-              <div className="font-semibold text-white">Restore Purchases</div>
-              <div className="text-sm text-white/50">Recover your items</div>
-            </div>
-          </button>
-          
-          {/* Links */}
-          <div className="flex gap-2 pt-2">
-            <a
-              href="#privacy"
-              className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+        {/* Modal */}
+        <div 
+          className="relative w-[320px] rounded-3xl overflow-hidden animate-scale-in"
+          style={{
+            background: 'linear-gradient(180deg, #1e3a5f 0%, #0f2744 100%)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+          }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4">
+            <h2 className="text-xl font-bold text-white">Settings</h2>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
             >
-              <Shield className="w-4 h-4 text-white/50" />
-              <span className="text-sm text-white/70">Privacy</span>
-            </a>
-            <a
-              href="#terms"
-              className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-            >
-              <FileText className="w-4 h-4 text-white/50" />
-              <span className="text-sm text-white/70">Terms</span>
-            </a>
+              <X className="w-5 h-5 text-white/70" />
+            </button>
+          </div>
+          
+          {/* Content */}
+          <div className="px-4 pb-5 space-y-2">
+            {/* Sound Toggle */}
+            <SettingsRow
+              icon={soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+              label="Sound"
+              isToggle
+              isEnabled={soundEnabled}
+              onToggle={onToggleSound}
+            />
+            
+            {/* BGM Toggle */}
+            <SettingsRow
+              icon={musicEnabled ? <Music className="w-5 h-5" /> : <Music2 className="w-5 h-5" />}
+              label="BGM"
+              isToggle
+              isEnabled={musicEnabled}
+              onToggle={onToggleMusic}
+            />
+            
+            {/* Vibration Toggle */}
+            <SettingsRow
+              icon={<Smartphone className="w-5 h-5" />}
+              label="Vibration"
+              isToggle
+              isEnabled={vibrationEnabled}
+              onToggle={onToggleVibration}
+            />
+            
+            {/* Replay Button */}
+            <SettingsRow
+              icon={<Play className="w-5 h-5" />}
+              label="Replay"
+              buttonLabel="Play"
+              onButtonClick={onReplay}
+            />
+            
+            {/* More Games - Disabled */}
+            <SettingsRow
+              icon={<Gamepad2 className="w-5 h-5" />}
+              label="More Games"
+              buttonLabel="Start"
+              disabled
+              comingSoon
+            />
+            
+            {/* More Settings */}
+            <SettingsRow
+              icon={<Settings2 className="w-5 h-5" />}
+              label="More Settings"
+              buttonLabel="Set"
+              onButtonClick={() => setShowMoreSettings(true)}
+            />
           </div>
         </div>
       </div>
+
+      {/* More Settings Modal */}
+      <MoreSettingsModal
+        isOpen={showMoreSettings}
+        onClose={() => setShowMoreSettings(false)}
+      />
+    </>
+  );
+};
+
+interface SettingsRowProps {
+  icon: React.ReactNode;
+  label: string;
+  isToggle?: boolean;
+  isEnabled?: boolean;
+  onToggle?: () => void;
+  buttonLabel?: string;
+  onButtonClick?: () => void;
+  disabled?: boolean;
+  comingSoon?: boolean;
+}
+
+const SettingsRow: React.FC<SettingsRowProps> = ({
+  icon,
+  label,
+  isToggle,
+  isEnabled,
+  onToggle,
+  buttonLabel,
+  onButtonClick,
+  disabled,
+  comingSoon,
+}) => {
+  return (
+    <div 
+      className={cn(
+        "flex items-center justify-between p-3 rounded-2xl",
+        "bg-white/5 border border-white/10",
+        disabled && "opacity-50"
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white/70">
+          {icon}
+        </div>
+        <div className="flex flex-col">
+          <span className="font-semibold text-white">{label}</span>
+          {comingSoon && (
+            <span className="text-[10px] text-amber-400">Coming Soon</span>
+          )}
+        </div>
+      </div>
+
+      {isToggle && (
+        <button
+          onClick={onToggle}
+          disabled={disabled}
+          className={cn(
+            "w-12 h-7 rounded-full transition-colors relative",
+            isEnabled ? "bg-emerald-500" : "bg-white/20"
+          )}
+        >
+          <div 
+            className={cn(
+              "absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-transform",
+              isEnabled ? "translate-x-6" : "translate-x-1"
+            )} 
+          />
+        </button>
+      )}
+
+      {buttonLabel && (
+        <button
+          onClick={onButtonClick}
+          disabled={disabled}
+          className={cn(
+            "px-4 py-2 rounded-xl font-semibold text-sm transition-all",
+            disabled
+              ? "bg-white/10 text-white/30 cursor-not-allowed"
+              : "bg-emerald-500 text-white active:scale-95"
+          )}
+          style={{
+            boxShadow: disabled ? 'none' : '0 2px 8px rgba(16, 185, 129, 0.4)',
+          }}
+        >
+          {buttonLabel}
+        </button>
+      )}
     </div>
   );
 };

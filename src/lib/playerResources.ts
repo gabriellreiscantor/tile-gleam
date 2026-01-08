@@ -12,6 +12,7 @@ export interface PlayerResources {
   // Settings
   soundEnabled: boolean;
   musicEnabled: boolean;
+  vibrationEnabled: boolean;
   tutorialCompleted: boolean;
   
   // Tracking
@@ -38,6 +39,7 @@ const INITIAL_RESOURCES: PlayerResources = {
   // Settings defaults
   soundEnabled: true,
   musicEnabled: true,
+  vibrationEnabled: true,
   tutorialCompleted: false,
   
   totalGamesPlayed: 0,

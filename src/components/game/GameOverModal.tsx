@@ -14,13 +14,13 @@ const GameOverModal: React.FC<GameOverModalProps> = ({ score, highScore, onResta
   return (
     <div 
       className={cn(
-        "fixed inset-0 z-50 flex flex-col items-center justify-center",
+        "fixed inset-0 z-[70] flex flex-col items-center justify-center",
         "animate-fade-in"
       )}
       style={{
         background: isNewRecord
-          ? 'linear-gradient(180deg, #4c1d95 0%, #7c3aed 50%, #5b21b6 100%)'
-          : 'linear-gradient(180deg, #0f172a 0%, #1e3a5f 50%, #0c1929 100%)',
+          ? 'linear-gradient(180deg, #581c87 0%, #7e22ce 30%, #6b21a8 70%, #4c1d95 100%)'
+          : 'linear-gradient(180deg, #0c1929 0%, #1e3a5f 30%, #1e3a5f 70%, #0c1929 100%)',
       }}
     >
       {/* Restart Button - Top Right */}
@@ -36,6 +36,7 @@ const GameOverModal: React.FC<GameOverModalProps> = ({ score, highScore, onResta
             : "bg-white/10 text-white/70"
         )}
         style={{
+          marginTop: 'env(safe-area-inset-top)',
           boxShadow: isNewRecord 
             ? '0 4px 20px rgba(251, 191, 36, 0.3)' 
             : '0 4px 20px rgba(0, 0, 0, 0.3)',
@@ -50,15 +51,15 @@ const GameOverModal: React.FC<GameOverModalProps> = ({ score, highScore, onResta
         {/* Crown Icon - Only for New Record */}
         {isNewRecord && (
           <div 
-            className="mb-4 animate-bounce"
+            className="mb-6"
             style={{
-              animation: 'bounce 1s ease-in-out infinite, pulse 2s ease-in-out infinite',
+              animation: 'bounce 2s ease-in-out infinite',
             }}
           >
             <Crown 
-              className="w-20 h-20 text-amber-400" 
+              className="w-24 h-24 text-amber-400" 
               style={{
-                filter: 'drop-shadow(0 0 20px rgba(251, 191, 36, 0.6))',
+                filter: 'drop-shadow(0 0 30px rgba(251, 191, 36, 0.7))',
               }}
             />
           </div>
@@ -67,12 +68,12 @@ const GameOverModal: React.FC<GameOverModalProps> = ({ score, highScore, onResta
         {/* Title */}
         <h1 
           className={cn(
-            "text-5xl font-black mb-10 text-center",
+            "text-4xl font-black mb-8 text-center",
             isNewRecord ? "text-amber-300" : "text-white"
           )}
           style={{
             textShadow: isNewRecord
-              ? '0 4px 0 #b45309, 0 0 40px rgba(251, 191, 36, 0.5)'
+              ? '0 4px 0 #92400e, 0 0 40px rgba(251, 191, 36, 0.5)'
               : '0 4px 0 rgba(0, 0, 0, 0.3), 0 0 30px rgba(255, 255, 255, 0.2)',
             letterSpacing: '-0.02em',
           }}
@@ -80,51 +81,65 @@ const GameOverModal: React.FC<GameOverModalProps> = ({ score, highScore, onResta
           {isNewRecord ? 'Best Score!' : 'Game Over'}
         </h1>
 
-        {/* Score Section */}
-        <div className="flex flex-col items-center mb-8">
-          <span className="text-lg text-white/60 uppercase tracking-widest font-medium mb-2">
+        {/* Score Card */}
+        <div 
+          className="rounded-3xl px-12 py-8 mb-8 text-center"
+          style={{
+            background: isNewRecord 
+              ? 'linear-gradient(180deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%)'
+              : 'linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%)',
+            border: isNewRecord 
+              ? '1px solid rgba(251, 191, 36, 0.3)'
+              : '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: isNewRecord 
+              ? 'inset 0 1px 0 rgba(251, 191, 36, 0.2), 0 20px 40px -10px rgba(0, 0, 0, 0.4)'
+              : 'inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 20px 40px -10px rgba(0, 0, 0, 0.4)',
+          }}
+        >
+          <span className="text-sm text-white/50 uppercase tracking-widest font-medium block mb-2">
             Score
           </span>
           <span 
-            className="text-7xl font-black text-white tabular-nums"
+            className="text-6xl font-black text-white tabular-nums block"
             style={{
               textShadow: '0 4px 0 rgba(0, 0, 0, 0.2)',
             }}
           >
             {score.toLocaleString()}
           </span>
+          
+          {/* Best Score - Only for Standard State */}
+          {!isNewRecord && highScore > 0 && (
+            <div className="mt-6 pt-4 border-t border-white/10">
+              <span className="text-xs text-amber-400/70 uppercase tracking-widest font-medium block mb-1">
+                Best Score
+              </span>
+              <div className="flex items-center justify-center gap-2">
+                <Crown className="w-4 h-4 text-amber-400" />
+                <span 
+                  className="text-2xl font-bold text-amber-400 tabular-nums"
+                  style={{
+                    textShadow: '0 0 20px rgba(251, 191, 36, 0.4)',
+                  }}
+                >
+                  {highScore.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Best Score Section - Only for Standard State */}
-        {!isNewRecord && highScore > 0 && (
-          <div className="flex flex-col items-center mb-10">
-            <span className="text-sm text-amber-400/80 uppercase tracking-widest font-medium mb-1">
-              Best Score
-            </span>
-            <span 
-              className="text-3xl font-bold text-amber-400 tabular-nums"
-              style={{
-                textShadow: '0 0 20px rgba(251, 191, 36, 0.4)',
-              }}
-            >
-              {highScore.toLocaleString()}
-            </span>
-          </div>
-        )}
-
-        {/* Spacer for new record state */}
-        {isNewRecord && <div className="h-10" />}
 
         {/* Play Again Button */}
         <button
           onClick={onRestart}
           className={cn(
-            "flex items-center justify-center",
-            "w-20 h-20 rounded-full",
+            "flex items-center justify-center gap-3",
+            "px-10 py-4 rounded-2xl",
+            "font-bold text-lg",
             "transition-all duration-200 active:scale-95",
             isNewRecord
-              ? "bg-gradient-to-b from-amber-400 to-amber-500"
-              : "bg-gradient-to-b from-emerald-400 to-emerald-500"
+              ? "bg-gradient-to-b from-amber-400 to-amber-500 text-amber-900"
+              : "bg-gradient-to-b from-emerald-400 to-emerald-500 text-emerald-900"
           )}
           style={{
             boxShadow: isNewRecord
@@ -132,7 +147,8 @@ const GameOverModal: React.FC<GameOverModalProps> = ({ score, highScore, onResta
               : '0 6px 0 #047857, 0 10px 30px rgba(16, 185, 129, 0.4)',
           }}
         >
-          <Play className="w-10 h-10 text-white ml-1" fill="white" />
+          <Play className="w-6 h-6" fill="currentColor" />
+          <span>Play Again</span>
         </button>
       </div>
     </div>
