@@ -186,26 +186,43 @@ const BlockBlastGame: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-6 p-4 min-h-screen justify-center">
-      <ScoreDisplay score={gameState.score} combo={gameState.combo} />
-      
-      <div ref={boardRef}>
-        <GameBoard
-          grid={gameState.grid}
-          ghostPosition={ghostPosition}
-          clearingCells={clearingCells}
-          onCellDrop={handleCellDrop}
-          onCellHover={handleCellHover}
-          onCellLeave={handleCellLeave}
-        />
+    <div 
+      className="fixed inset-0 flex flex-col items-center overflow-hidden"
+      style={{
+        paddingTop: 'max(env(safe-area-inset-top), 16px)',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 16px)',
+        paddingLeft: 'max(env(safe-area-inset-left), 12px)',
+        paddingRight: 'max(env(safe-area-inset-right), 12px)',
+      }}
+    >
+      {/* Score - Top */}
+      <div className="flex-shrink-0 pt-2">
+        <ScoreDisplay score={gameState.score} combo={gameState.combo} />
       </div>
       
-      <PieceTray
-        pieces={pieces}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDrag={handleDrag}
-      />
+      {/* Board - Center, fills available space */}
+      <div className="flex-1 flex items-center justify-center w-full min-h-0 py-3">
+        <div ref={boardRef}>
+          <GameBoard
+            grid={gameState.grid}
+            ghostPosition={ghostPosition}
+            clearingCells={clearingCells}
+            onCellDrop={handleCellDrop}
+            onCellHover={handleCellHover}
+            onCellLeave={handleCellLeave}
+          />
+        </div>
+      </div>
+      
+      {/* Piece Tray - Bottom, fixed height */}
+      <div className="flex-shrink-0 w-full pb-2">
+        <PieceTray
+          pieces={pieces}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDrag={handleDrag}
+        />
+      </div>
       
       {isGameOver && (
         <GameOverModal score={gameState.score} onRestart={handleRestart} />
