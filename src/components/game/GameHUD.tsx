@@ -16,31 +16,34 @@ const GameHUD: React.FC<GameHUDProps> = ({
   onOpenSettings,
 }) => {
   return (
-    <div className="w-full max-w-md">
-      <div className="flex items-start justify-between">
-        {/* LEFT: Best Score - Flush left */}
-        <div className="flex flex-col items-start min-w-[70px]">
+    <div className="w-full max-w-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div className="relative h-[72px]">
+        {/* LEFT: Best Score - Absolute left corner */}
+        <div className="absolute left-0 top-0 flex flex-col items-start">
           <div className="flex items-center gap-1 text-amber-400 mb-0.5">
-            <Crown className="w-4 h-4" />
-            <span className="text-[10px] uppercase tracking-widest font-semibold opacity-80">Best</span>
+            <Crown className="w-4 h-4 drop-shadow-[0_0_4px_rgba(251,191,36,0.5)]" />
+            <span className="text-[10px] uppercase tracking-widest font-semibold opacity-90">Best</span>
           </div>
-          <div className="text-xl font-bold text-amber-300 tabular-nums">
+          <div 
+            className="text-xl font-bold text-amber-300 tabular-nums"
+            style={{ textShadow: '0 0 8px rgba(251,191,36,0.3)' }}
+          >
             {bestScore.toLocaleString()}
           </div>
         </div>
         
-        {/* CENTER: Current Score */}
-        <div className="flex flex-col items-center flex-1">
+        {/* CENTER: Current Score - True center */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pt-2">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium mb-0.5">
             Score
           </div>
           <div 
             className={cn(
               "text-4xl font-black text-white tabular-nums transition-transform",
-              combo > 0 && "scale-105"
+              combo > 1 && "scale-105"
             )}
             style={{
-              textShadow: combo > 0 
+              textShadow: combo > 1 
                 ? '0 0 20px hsl(var(--primary) / 0.5)' 
                 : 'none'
             }}
@@ -48,8 +51,8 @@ const GameHUD: React.FC<GameHUDProps> = ({
             {currentScore.toLocaleString()}
           </div>
           
-          {/* Combo indicator */}
-          {combo > 0 && (
+          {/* Combo indicator - only when combo > 1 */}
+          {combo > 1 && (
             <div 
               className={cn(
                 "mt-1 px-3 py-0.5 rounded-full text-xs font-bold",
@@ -63,15 +66,16 @@ const GameHUD: React.FC<GameHUDProps> = ({
           )}
         </div>
         
-        {/* RIGHT: Settings Button */}
-        <div className="min-w-[70px] flex justify-end">
+        {/* RIGHT: Settings Button - Absolute right corner */}
+        <div className="absolute right-0 top-0">
           <button
             onClick={onOpenSettings}
             className={cn(
               "w-11 h-11 rounded-2xl",
               "bg-white/10 hover:bg-white/20",
               "flex items-center justify-center",
-              "transition-all duration-200 active:scale-95"
+              "transition-all duration-200 active:scale-95",
+              "shadow-lg"
             )}
           >
             <Settings className="w-5 h-5 text-white/70" />
