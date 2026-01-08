@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { BANNER_TOTAL_HEIGHT } from './BannerAd';
+import { BANNER_HEIGHT } from './BannerAd';
 
 interface SafeAreaInsets {
   top: number;
@@ -16,8 +16,8 @@ interface SafeAreaContextValue {
 
 const SafeAreaContext = createContext<SafeAreaContextValue>({
   insets: { top: 0, bottom: 0, left: 0, right: 0 },
-  bannerHeight: BANNER_TOTAL_HEIGHT,
-  totalBottomPadding: BANNER_TOTAL_HEIGHT,
+  bannerHeight: BANNER_HEIGHT,
+  totalBottomPadding: BANNER_HEIGHT,
 });
 
 export const useSafeArea = () => useContext(SafeAreaContext);
@@ -37,8 +37,6 @@ export const SafeAreaProvider: React.FC<SafeAreaProviderProps> = ({ children }) 
   useEffect(() => {
     // Read CSS environment variables for safe area
     const computeInsets = () => {
-      const style = getComputedStyle(document.documentElement);
-      
       // Create a temporary element to measure env() values
       const div = document.createElement('div');
       div.style.cssText = `
@@ -72,12 +70,12 @@ export const SafeAreaProvider: React.FC<SafeAreaProviderProps> = ({ children }) 
     return () => window.removeEventListener('resize', computeInsets);
   }, []);
 
-  const totalBottomPadding = BANNER_TOTAL_HEIGHT + insets.bottom;
+  const totalBottomPadding = BANNER_HEIGHT + insets.bottom;
 
   return (
     <SafeAreaContext.Provider value={{ 
       insets, 
-      bannerHeight: BANNER_TOTAL_HEIGHT,
+      bannerHeight: BANNER_HEIGHT,
       totalBottomPadding,
     }}>
       {children}

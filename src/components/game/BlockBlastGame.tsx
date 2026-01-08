@@ -670,9 +670,9 @@ const BlockBlastGame: React.FC = () => {
           </div>
         )}
         
-        {/* Piece Tray - Bottom, fixed height */}
+        {/* Piece Tray - Bottom, no padding (banner comes right after) */}
         <div className={cn(
-          "flex-shrink-0 w-full pb-2",
+          "flex-shrink-0 w-full",
           isTutorialPieceHighlighted && "tutorial-piece-highlight"
         )}>
           <PieceTray
