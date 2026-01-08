@@ -21,15 +21,19 @@ let admobPlugin: AdMobPlugin | null = null;
 let isInitialized = false;
 let rewardedAdLoaded = false;
 
-// Dynamically import AdMob only on native (plugin won't exist on web)
-async function getAdMob(): Promise<AdMobPlugin | null> {
+// Get AdMob plugin from Capacitor's registered plugins (no import needed)
+// The plugin registers itself globally when installed in native builds
+function getAdMob(): AdMobPlugin | null {
   if (!isNativePlatform()) return null;
   
   try {
-    // Dynamic import - will fail gracefully on web or if plugin not installed
-    // @ts-ignore - Plugin only available in native Capacitor builds
-    const module = await import('@capacitor-community/admob');
-    return module.AdMob as AdMobPlugin;
+    // Access through Capacitor's plugin registry - avoids build-time import issues
+    const Capacitor = (window as any).Capacitor;
+    if (Capacitor?.Plugins?.AdMob) {
+      return Capacitor.Plugins.AdMob as AdMobPlugin;
+    }
+    console.warn('[AdService] AdMob plugin not registered');
+    return null;
   } catch (e) {
     console.warn('[AdService] AdMob plugin not available:', e);
     return null;
@@ -45,7 +49,7 @@ export async function initializeAds(): Promise<boolean> {
   }
   
   try {
-    admobPlugin = await getAdMob();
+    admobPlugin = getAdMob();
     if (!admobPlugin) return false;
     
     await admobPlugin.initialize({
