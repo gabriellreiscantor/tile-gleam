@@ -23,7 +23,7 @@ const PieceTray: React.FC<PieceTrayProps> = ({
   return (
     <div className="piece-tray w-full max-w-[360px] mx-auto">
       {/* Piece slots with generous spacing */}
-      <div className="flex items-center justify-between gap-3 px-1">
+      <div className="flex items-center justify-between gap-3 px-3 py-3 rounded-2xl bg-white/10 backdrop-blur-sm">
         {pieces.map((piece, index) => (
           <div 
             key={piece?.id ?? `empty-${index}`} 
