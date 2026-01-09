@@ -435,6 +435,25 @@ html, body {
   animation: glow-pulse 0.8s ease-in-out infinite;
 }
 
+/* Flood fill animation before game over */
+@keyframes flood-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.flood-tile {
+  animation: flood-pop 0.2s ease-out forwards;
+}
+
 /* Continue modal styling */
 .continue-modal {
   background: linear-gradient(

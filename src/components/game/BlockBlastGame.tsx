@@ -246,6 +246,8 @@ const BlockBlastGame: React.FC = () => {
   
   const [isGameOver, setIsGameOver] = useState(false);
   const [clearingCells, setClearingCells] = useState<Set<string>>(new Set());
+  const [floodingCells, setFloodingCells] = useState<Map<string, number>>(new Map());
+  const [isFlooding, setIsFlooding] = useState(false);
   const [screenShake, setScreenShake] = useState(false);
   
   // ========== DRAG STATE (visual only) ==========
@@ -566,6 +568,48 @@ const BlockBlastGame: React.FC = () => {
     setGhostState(null);
   }, [dragState, ghostState, gameState, pieces, itemGrid, tutorial, checkGameOver, getBoardMetrics, generatePiecesWithRng, playerResources, showFeedback]);
 
+  // ========== FLOOD FILL ANIMATION ==========
+  const startFloodAnimation = useCallback((grid: number[][], onComplete: () => void) => {
+    setIsFlooding(true);
+    
+    // Find all empty cells
+    const emptyCells: { x: number; y: number }[] = [];
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        if (grid[y][x] === 0) {
+          emptyCells.push({ x, y });
+        }
+      }
+    }
+    
+    // Shuffle for random fill order
+    const shuffled = emptyCells.sort(() => Math.random() - 0.5);
+    
+    // Fill cells progressively
+    let index = 0;
+    const interval = setInterval(() => {
+      if (index >= shuffled.length) {
+        clearInterval(interval);
+        // Animation complete - wait a moment then show game over
+        setTimeout(() => {
+          setIsFlooding(false);
+          setFloodingCells(new Map());
+          onComplete();
+        }, 400);
+        return;
+      }
+      
+      const cell = shuffled[index];
+      const randomColor = Math.floor(Math.random() * 8) + 1; // 1-8
+      setFloodingCells(prev => new Map(prev).set(`${cell.x}-${cell.y}`, randomColor));
+      
+      // Light haptic for each cell
+      triggerHaptic('light');
+      
+      index++;
+    }, 40); // 40ms between each cell
+  }, []);
+
   // ========== GAME OVER FLOW ==========
   const handleGameOver = useCallback((finalState: EngineState) => {
     const gridOccupancy = getGridOccupancy(finalState.grid);
@@ -579,16 +623,21 @@ const BlockBlastGame: React.FC = () => {
     // Update high score
     setPlayerResources(prev => updateHighScore(prev, finalState.score));
     
-    if (eligibility.canOffer || canAffordCrystalContinue(itemResources)) {
-      // Show continue modal instead of game over
-      setShowContinueModal(true);
-    } else {
-      // Direct game over
-      rngOnGameOver(rngStateRef.current);
-      sounds.gameOver(playerResources.soundEnabled);
-      setIsGameOver(true);
-    }
-  }, [playerResources, itemResources]);
+    // Play game over sound at start of flood
+    sounds.gameOver(playerResources.soundEnabled);
+    
+    // Start flood animation, then show modal/game over
+    startFloodAnimation(finalState.grid, () => {
+      if (eligibility.canOffer || canAffordCrystalContinue(itemResources)) {
+        // Show continue modal instead of game over
+        setShowContinueModal(true);
+      } else {
+        // Direct game over
+        rngOnGameOver(rngStateRef.current);
+        setIsGameOver(true);
+      }
+    });
+  }, [playerResources, itemResources, startFloodAnimation]);
 
   const handleContinueFree = useCallback(() => {
     setPlayerResources(prev => useContinue(prev, 'free'));
@@ -828,6 +877,7 @@ const BlockBlastGame: React.FC = () => {
               itemGrid={itemGrid}
               ghostPosition={ghostPosition}
               clearingCells={clearingCells}
+              floodingCells={floodingCells}
               tutorialTargetCells={tutorialTargetCells}
               onCellDrop={handleCellDrop}
               onCellHover={handleCellHover}
