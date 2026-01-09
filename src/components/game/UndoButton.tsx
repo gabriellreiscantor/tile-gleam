@@ -48,17 +48,17 @@ const UndoButton: React.FC<UndoButtonProps> = ({
     >
       <Undo2 className="w-6 h-6 text-white" />
       
-      {/* Badge - Free indicator */}
+      {/* Badge - Free daily indicator (green "1") */}
       {availability.isFree && availability.canUndo && (
         <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
           <span className="text-[10px] font-bold text-white">1</span>
         </div>
       )}
       
-      {/* Badge - Paid count */}
-      {!availability.isFree && availability.hasPaidUndo && (
+      {/* Badge - Premium unlimited (orange "$") - shows when free is used AND has premium */}
+      {!availability.isFree && availability.hasPaidUndo && availability.canUndo && (
         <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
-          <span className="text-[10px] font-bold text-white">$</span>
+          <span className="text-[10px] font-bold text-white">∞</span>
         </div>
       )}
     </button>
