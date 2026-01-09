@@ -17,6 +17,7 @@ interface GameBoardProps {
   itemGrid?: ItemGrid;
   ghostPosition: GhostPosition | null;
   clearingCells: Set<string>;
+  floodingCells?: Map<string, number>;
   tutorialTargetCells?: Set<string> | null;
   onCellDrop: (x: number, y: number) => void;
   onCellHover: (x: number, y: number) => void;
@@ -28,6 +29,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   itemGrid,
   ghostPosition,
   clearingCells,
+  floodingCells,
   tutorialTargetCells,
   onCellDrop,
   onCellHover,
@@ -66,6 +68,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
             const showGhost = isGhostCell(x, y) && cell === 0;
             const isTutorialTarget = tutorialTargetCells?.has(key) ?? false;
             const itemInCell = itemGrid?.[y]?.[x] ?? null;
+            const floodColor = floodingCells?.get(key);
 
             return (
               <div
@@ -93,7 +96,16 @@ const GameBoard: React.FC<GameBoardProps> = ({
                     {itemInCell && <ItemBadge itemType={itemInCell} />}
                   </div>
                 )}
-                {showGhost && ghostPosition && (
+                {/* Flood fill animation - empty cells being filled */}
+                {cell === 0 && floodColor && (
+                  <div
+                    className={cn(
+                      'flood-tile game-tile w-full h-full',
+                      `tile-${floodColor}`
+                    )}
+                  />
+                )}
+                {showGhost && ghostPosition && !floodColor && (
                   <div
                     className={cn(
                       'ghost-tile w-full h-full',
