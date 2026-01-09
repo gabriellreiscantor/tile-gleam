@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Sparkles } from 'lucide-react';
+import { Dices } from 'lucide-react';
 
 interface ConsentModalProps {
   onAccept: () => void;
@@ -98,8 +98,8 @@ const ConsentModal: React.FC<ConsentModalProps> = ({ onAccept }) => {
             }}
           />
           <div className="relative">
-            <Sparkles 
-              className="w-12 h-12 text-primary" 
+            <Dices 
+              className="w-14 h-14 text-primary" 
               style={{
                 filter: 'drop-shadow(0 0 10px hsl(200 100% 60% / 0.5))',
               }}
