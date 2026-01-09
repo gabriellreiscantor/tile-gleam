@@ -1,15 +1,93 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Play, RotateCcw, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { ContinueEligibility } from '@/lib/playerResources';
+import { showRewardedAd } from '@/lib/adService';
+import { 
+  CONTINUE_CRYSTAL_COST, 
+  canAffordCrystalContinue,
+  type ItemResources 
+} from '@/lib/collectibles';
+import SimulatedAdOverlay from './SimulatedAdOverlay';
 
 interface GameOverModalProps {
   score: number;
   highScore: number;
   onRestart: () => void;
+  // Continue options
+  showContinueOptions?: boolean;
+  eligibility?: ContinueEligibility;
+  itemResources?: ItemResources;
+  onContinueFree?: () => void;
+  onContinuePaid?: () => void;
+  onContinueAd?: () => void;
+  onContinueCrystal?: () => void;
+  onDecline?: () => void;
 }
 
-const GameOverModal: React.FC<GameOverModalProps> = ({ score, highScore, onRestart }) => {
+const GameOverModal: React.FC<GameOverModalProps> = ({ 
+  score, 
+  highScore, 
+  onRestart,
+  showContinueOptions = false,
+  eligibility,
+  itemResources,
+  onContinueFree,
+  onContinuePaid,
+  onContinueAd,
+  onContinueCrystal,
+  onDecline,
+}) => {
+  const [isLoadingAd, setIsLoadingAd] = useState(false);
+  const [adError, setAdError] = useState<string | null>(null);
+  const [showSimulatedAd, setShowSimulatedAd] = useState(false);
+
   const isNewRecord = score >= highScore && score > 0;
+
+  const handleWatchAd = async () => {
+    setIsLoadingAd(true);
+    setAdError(null);
+    
+    try {
+      const result = await showRewardedAd();
+      
+      if (result.success) {
+        if (result.isSimulated) {
+          setShowSimulatedAd(true);
+          setIsLoadingAd(false);
+        } else {
+          onContinueAd?.();
+        }
+      } else {
+        setAdError(result.error || 'Ad not available');
+        setIsLoadingAd(false);
+      }
+    } catch {
+      setAdError('Failed to show ad');
+      setIsLoadingAd(false);
+    }
+  };
+
+  const handleSimulatedAdComplete = () => {
+    setShowSimulatedAd(false);
+    onContinueAd?.();
+  };
+
+  // Show simulated ad overlay (fullscreen)
+  if (showSimulatedAd) {
+    return (
+      <SimulatedAdOverlay
+        isOpen={true}
+        onComplete={handleSimulatedAdComplete}
+        duration={5}
+      />
+    );
+  }
+
+  const canUseCrystals = itemResources && canAffordCrystalContinue(itemResources);
+  const state = eligibility?.state;
+  const hasPaidContinue = eligibility?.hasPaidContinue;
+  const canWatchAd = eligibility?.canWatchAd;
 
   return (
     <div 
@@ -129,26 +207,147 @@ const GameOverModal: React.FC<GameOverModalProps> = ({ score, highScore, onResta
           )}
         </div>
 
+        {/* Continue Options */}
+        {showContinueOptions && eligibility && (
+          <div className="w-full max-w-[300px] space-y-3 mb-6">
+            {/* STATE 1: Free Continue Available */}
+            {state === 'free' && (
+              <button
+                onClick={onContinueFree}
+                className={cn(
+                  "w-full py-4 px-6 rounded-2xl font-bold text-[17px]",
+                  "bg-gradient-to-b from-[#22c55e] to-[#16a34a]",
+                  "text-white",
+                  "active:scale-[0.97] transition-all duration-150",
+                  "relative overflow-hidden"
+                )}
+                style={{
+                  boxShadow: '0 6px 0 #047857, 0 10px 30px rgba(34, 197, 94, 0.4)',
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/10 pointer-events-none" />
+                <div className="flex items-center justify-center gap-2 relative">
+                  <span className="text-xl">↻</span>
+                  <span>Continue (1 Free)</span>
+                </div>
+              </button>
+            )}
+
+            {/* STATE 2: Ad Available */}
+            {state === 'ad' && (
+              <>
+                <button
+                  onClick={handleWatchAd}
+                  disabled={isLoadingAd}
+                  className={cn(
+                    "w-full py-4 px-6 rounded-2xl font-bold text-[17px]",
+                    "bg-gradient-to-b from-[#f59e0b] to-[#d97706]",
+                    "text-white",
+                    "active:scale-[0.97] transition-all duration-150",
+                    "relative overflow-hidden",
+                    isLoadingAd && "opacity-80 cursor-wait"
+                  )}
+                  style={{
+                    boxShadow: '0 6px 0 #b45309, 0 10px 30px rgba(245, 158, 11, 0.4)',
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/10 pointer-events-none" />
+                  <div className="flex items-center justify-center gap-2 relative">
+                    {isLoadingAd ? (
+                      <>
+                        <span className="animate-spin text-xl">⏳</span>
+                        <span>Loading Ad...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-xl">🎬</span>
+                        <span>Watch Ad to Continue</span>
+                      </>
+                    )}
+                  </div>
+                </button>
+                
+                {adError && (
+                  <p className="text-red-400 text-sm text-center">
+                    {adError}. Try again or use crystals.
+                  </p>
+                )}
+              </>
+            )}
+
+            {/* Crystal Continue - Available in 'ad' or 'paid-only' states */}
+            {(state === 'ad' || state === 'paid-only') && canUseCrystals && itemResources && (
+              <button
+                onClick={onContinueCrystal}
+                className={cn(
+                  "w-full py-4 px-6 rounded-2xl font-bold text-[16px]",
+                  "bg-gradient-to-b from-[#8b5cf6] to-[#7c3aed]",
+                  "text-white",
+                  "active:scale-[0.97] transition-all duration-150",
+                  "relative overflow-hidden"
+                )}
+                style={{
+                  boxShadow: '0 6px 0 #5b21b6, 0 10px 30px rgba(139, 92, 246, 0.4)',
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/10 pointer-events-none" />
+                <div className="flex items-center justify-center gap-2 relative">
+                  <span className="text-xl">💎</span>
+                  <span>Use {CONTINUE_CRYSTAL_COST} Crystals</span>
+                  <span className="text-white/60 text-sm">({itemResources.crystals})</span>
+                </div>
+              </button>
+            )}
+
+            {/* Paid Continue - in 'ad' or 'paid-only' states */}
+            {(state === 'ad' || state === 'paid-only') && hasPaidContinue && (
+              <button
+                onClick={onContinuePaid}
+                className={cn(
+                  "w-full py-4 px-6 rounded-2xl font-bold text-[16px]",
+                  "bg-gradient-to-b from-[#22c55e] to-[#16a34a]",
+                  "text-white",
+                  "active:scale-[0.97] transition-all duration-150",
+                  "relative overflow-hidden"
+                )}
+                style={{
+                  boxShadow: '0 6px 0 #047857, 0 10px 30px rgba(34, 197, 94, 0.35)',
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/10 pointer-events-none" />
+                <div className="flex flex-col items-center relative">
+                  <span>Continue (Paid)</span>
+                  <span className="text-[12px] text-white/70 font-normal mt-0.5">$0.99</span>
+                </div>
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Play Again Button */}
         <button
-          onClick={onRestart}
+          onClick={showContinueOptions && onDecline ? onDecline : onRestart}
           className={cn(
             "flex items-center justify-center gap-3",
             "px-10 py-4 rounded-2xl",
             "font-bold text-lg",
             "transition-all duration-200 active:scale-95",
-            isNewRecord
-              ? "bg-gradient-to-b from-amber-400 to-amber-500 text-amber-900"
-              : "bg-gradient-to-b from-emerald-400 to-emerald-500 text-emerald-900"
+            showContinueOptions
+              ? "bg-white/10 text-white/70 border border-white/20"
+              : isNewRecord
+                ? "bg-gradient-to-b from-amber-400 to-amber-500 text-amber-900"
+                : "bg-gradient-to-b from-emerald-400 to-emerald-500 text-emerald-900"
           )}
           style={{
-            boxShadow: isNewRecord
-              ? '0 6px 0 #b45309, 0 10px 30px rgba(251, 191, 36, 0.4)'
-              : '0 6px 0 #047857, 0 10px 30px rgba(16, 185, 129, 0.4)',
+            boxShadow: showContinueOptions
+              ? '0 4px 20px rgba(0, 0, 0, 0.3)'
+              : isNewRecord
+                ? '0 6px 0 #b45309, 0 10px 30px rgba(251, 191, 36, 0.4)'
+                : '0 6px 0 #047857, 0 10px 30px rgba(16, 185, 129, 0.4)',
           }}
         >
           <Play className="w-6 h-6" fill="currentColor" />
-          <span>Play Again</span>
+          <span>{showContinueOptions ? 'No, End Game' : 'Play Again'}</span>
         </button>
       </div>
     </div>
