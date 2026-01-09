@@ -60,22 +60,13 @@ const GameHUD: React.FC<GameHUDProps> = ({
           )}
         </div>
 
-        {/* RIGHT — ITEMS + SETTINGS */}
-        <div className="absolute right-0 top-2 flex items-center gap-2">
-          {/* Item counters (smaller than score) */}
-          {itemResources && (
-            <>
-              <HUDPill icon="💎" value={itemResources.crystals} />
-              <HUDPill icon="❄️" value={itemResources.ice} />
-            </>
-          )}
-          
-          {/* Settings button */}
+        {/* RIGHT — SETTINGS (TOP) */}
+        <div className="absolute right-0 top-2">
           <button
             type="button"
             onClick={onOpenSettings}
             className={cn(
-              "h-10 w-10 rounded-xl",
+              "h-11 w-11 rounded-2xl",
               "bg-white/10 backdrop-blur-sm",
               "flex items-center justify-center",
               "active:scale-95 transition-transform"
@@ -85,6 +76,14 @@ const GameHUD: React.FC<GameHUDProps> = ({
             <span className="text-lg leading-none">⚙️</span>
           </button>
         </div>
+
+        {/* RIGHT — ITEMS (BELOW SETTINGS) */}
+        {itemResources && (
+          <div className="absolute right-0 top-[56px] flex flex-col gap-1 items-end">
+            <HUDPill icon="💎" value={itemResources.crystals} />
+            <HUDPill icon="❄️" value={itemResources.ice} />
+          </div>
+        )}
       </div>
     </div>
   );
