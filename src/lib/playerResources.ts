@@ -8,8 +8,8 @@ export interface PlayerResources {
   // Free continue tracking (one-time only)
   hasUsedFreeContinue: boolean;
   
-  // Undo system: 1 free per day + unlimited paid (premium)
-  hasPaidUndo: boolean;          // Did user buy premium undo? (one-time purchase)
+  // Undo system: 1 free per day + paid undos (consumable)
+  paidUndos: number;             // Purchased undos (each purchase = 1 undo)
   freeUndoUsedToday: boolean;    // Used the free daily undo?
   lastFreeUndoDate: string;      // Date of last reset ("2026-01-09")
   
@@ -38,8 +38,8 @@ const INITIAL_RESOURCES: PlayerResources = {
   
   hasUsedFreeContinue: false,
   
-  // Undo: starts with free daily, no premium
-  hasPaidUndo: false,
+  // Undo: starts with free daily, no paid undos
+  paidUndos: 0,
   freeUndoUsedToday: false,
   lastFreeUndoDate: '',
   
@@ -199,12 +199,14 @@ export function useContinue(resources: PlayerResources, type: 'free' | 'paid' | 
 }
 
 // ========== UNDO LOGIC ==========
-// System: 1 FREE per DAY + UNLIMITED paid (premium purchase)
+// System: 1 FREE per DAY + PAID undos (consumable, 1 per purchase)
 
 export interface UndoAvailability {
   canUndo: boolean;
   isFree: boolean;
-  hasPaidUndo: boolean;
+  hasPaidUndos: boolean;       // Has purchased undos available?
+  paidUndoCount: number;       // How many paid undos left?
+  canBuyUndo: boolean;         // Should show buy button?
   reason: string;
 }
 
@@ -217,7 +219,9 @@ export function checkUndoAvailability(
     return {
       canUndo: false,
       isFree: false,
-      hasPaidUndo: resources.hasPaidUndo,
+      hasPaidUndos: resources.paidUndos > 0,
+      paidUndoCount: resources.paidUndos,
+      canBuyUndo: resources.freeUndoUsedToday, // Show buy if free was used
       reason: 'Cannot undo after clearing lines',
     };
   }
@@ -227,27 +231,33 @@ export function checkUndoAvailability(
     return {
       canUndo: true,
       isFree: true,
-      hasPaidUndo: resources.hasPaidUndo,
+      hasPaidUndos: resources.paidUndos > 0,
+      paidUndoCount: resources.paidUndos,
+      canBuyUndo: false,
       reason: 'Free daily undo',
     };
   }
   
-  // Free undo used today - check if has premium undo
-  if (resources.hasPaidUndo) {
+  // Free undo used today - check if has paid undos
+  if (resources.paidUndos > 0) {
     return {
       canUndo: true,
       isFree: false,
-      hasPaidUndo: true,
-      reason: 'Unlimited premium undo',
+      hasPaidUndos: true,
+      paidUndoCount: resources.paidUndos,
+      canBuyUndo: false,
+      reason: `${resources.paidUndos} paid undo(s) remaining`,
     };
   }
   
-  // No undos available
+  // No undos available - show buy option
   return {
     canUndo: false,
     isFree: false,
-    hasPaidUndo: false,
-    reason: 'No undos available',
+    hasPaidUndos: false,
+    paidUndoCount: 0,
+    canBuyUndo: true,
+    reason: 'No undos available - buy more!',
   };
 }
 
@@ -259,15 +269,17 @@ export function useUndo(resources: PlayerResources): PlayerResources {
   if (!updated.freeUndoUsedToday) {
     updated.freeUndoUsedToday = true;
     updated.lastFreeUndoDate = new Date().toDateString();
+  } else {
+    // Using paid undo - decrement count
+    updated.paidUndos = Math.max(0, updated.paidUndos - 1);
   }
-  // If using paid undo, DON'T decrement - it's unlimited!
   
   return updated;
 }
 
-// Purchase premium undo (one-time, unlimited use)
+// Purchase ONE paid undo (consumable)
 export function purchasePaidUndo(resources: PlayerResources): PlayerResources {
-  return { ...resources, hasPaidUndo: true };
+  return { ...resources, paidUndos: resources.paidUndos + 1 };
 }
 
 // ========== HIGH SCORE ==========
@@ -346,9 +358,9 @@ export function resetResources(): PlayerResources {
   return { ...INITIAL_RESOURCES };
 }
 
-// Debug: Give premium undo
-export function grantPremiumUndo(resources: PlayerResources): PlayerResources {
-  return { ...resources, hasPaidUndo: true };
+// Debug: Give paid undos (for testing)
+export function grantPaidUndos(resources: PlayerResources, count: number = 3): PlayerResources {
+  return { ...resources, paidUndos: resources.paidUndos + count };
 }
 
 // Debug: Reset daily undo (for testing)

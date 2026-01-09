@@ -18,7 +18,7 @@ import {
 import { 
   loadResources, 
   saveResources, 
-  grantPremiumUndo, 
+  grantPaidUndos, 
   resetDailyUndo,
   type ContinueEligibility 
 } from '@/lib/playerResources';
@@ -325,11 +325,11 @@ const Debug: React.FC = () => {
             className="border-amber-500/50"
             onClick={() => {
               const resources = loadResources();
-              saveResources(grantPremiumUndo(resources));
+              saveResources(grantPaidUndos(resources, 3));
               triggerHaptic('success');
             }}
           >
-            🎁 Give Premium Undo
+            🎁 +3 Paid Undos
           </Button>
           <Button
             variant="outline"
