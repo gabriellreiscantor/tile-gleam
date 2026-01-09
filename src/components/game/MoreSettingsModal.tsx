@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, ChevronRight, Mail, Share2, Youtube, FileText, Shield, Info, Settings } from 'lucide-react';
 import { getAppVersion } from '@/lib/playerResources';
+import appIcon from '@/assets/app-icon.png';
 
 // Page components
 import TermsOfServicePage from '@/pages/legal/TermsOfService';
@@ -82,12 +83,12 @@ const MoreSettingsModal: React.FC<MoreSettingsModalProps> = ({
         
         {/* App Info */}
         <div className="mx-4 mb-4 p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{
-          background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
-        }}>
-            <span className="text-2xl">🧩</span>
-          </div>
+          <img 
+            src={appIcon} 
+            alt="Block Explosion" 
+            className="w-14 h-14 rounded-2xl object-cover"
+            style={{ boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)' }}
+          />
           <div className="flex-1">
             <h3 className="font-bold text-white">Block Explosion: Puzzle Game</h3>
             <p className="text-sm text-white/50">Version: {getAppVersion()}</p>
