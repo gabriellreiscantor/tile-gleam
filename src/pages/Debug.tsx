@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import FeedbackText from '@/components/game/FeedbackText';
 import ParticleEffect from '@/components/game/ParticleEffect';
 import AnimatedScore from '@/components/game/AnimatedScore';
-import ContinueModal from '@/components/game/ContinueModal';
 import GameOverModal from '@/components/game/GameOverModal';
 import {
   getClearMessage,
@@ -313,38 +312,45 @@ const Debug: React.FC = () => {
         </div>
       </Section>
 
-      {/* Continue Modal Component */}
-      <ContinueModal
-        isOpen={showContinueModal}
-        score={score || 1248}
-        eligibility={{
-          canOffer: true,
-          state: continueState,
-          hasPaidContinue: true,
-          canWatchAd: continueState === 'ad',
-        } as ContinueEligibility}
-        itemResources={{ crystals: 5, ice: 3 }}
-        onContinueFree={() => {
-          setShowContinueModal(false);
-          showFeedback({ text: 'FREE CONTINUE!', emoji: '🎁', intensity: 'high', color: 'green' });
-        }}
-        onContinuePaid={() => {
-          setShowContinueModal(false);
-          showFeedback({ text: 'PAID CONTINUE!', emoji: '💰', intensity: 'high', color: 'green' });
-        }}
-        onContinueAd={() => {
-          setShowContinueModal(false);
-          showFeedback({ text: 'AD CONTINUE!', emoji: '🎬', intensity: 'high', color: 'green' });
-        }}
-        onContinueCrystal={() => {
-          setShowContinueModal(false);
-          showFeedback({ text: 'CRYSTAL CONTINUE!', emoji: '💎', intensity: 'high', color: 'purple' });
-        }}
-        onDecline={() => {
-          setShowContinueModal(false);
-          showFeedback({ text: 'GAME OVER', emoji: '💀', intensity: 'medium', color: 'destructive' });
-        }}
-      />
+      {/* Continue Modal Component - Now uses GameOverModal */}
+      {showContinueModal && (
+        <GameOverModal
+          score={score || 1248}
+          highScore={500}
+          onRestart={() => {
+            setShowContinueModal(false);
+            showFeedback({ text: 'NEW GAME!', emoji: '🎮', intensity: 'medium', color: 'cyan' });
+          }}
+          showContinueOptions={true}
+          eligibility={{
+            canOffer: true,
+            state: continueState,
+            hasPaidContinue: true,
+            canWatchAd: continueState === 'ad',
+          } as ContinueEligibility}
+          itemResources={{ crystals: 5, ice: 3 }}
+          onContinueFree={() => {
+            setShowContinueModal(false);
+            showFeedback({ text: 'FREE CONTINUE!', emoji: '🎁', intensity: 'high', color: 'green' });
+          }}
+          onContinuePaid={() => {
+            setShowContinueModal(false);
+            showFeedback({ text: 'PAID CONTINUE!', emoji: '💰', intensity: 'high', color: 'green' });
+          }}
+          onContinueAd={() => {
+            setShowContinueModal(false);
+            showFeedback({ text: 'AD CONTINUE!', emoji: '🎬', intensity: 'high', color: 'green' });
+          }}
+          onContinueCrystal={() => {
+            setShowContinueModal(false);
+            showFeedback({ text: 'CRYSTAL CONTINUE!', emoji: '💎', intensity: 'high', color: 'purple' });
+          }}
+          onDecline={() => {
+            setShowContinueModal(false);
+            showFeedback({ text: 'GAME OVER', emoji: '💀', intensity: 'medium', color: 'destructive' });
+          }}
+        />
+      )}
 
       {/* Game Over Modal Component */}
       {showGameOverModal && (

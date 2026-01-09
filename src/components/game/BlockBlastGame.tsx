@@ -5,7 +5,6 @@ import PieceTray from './PieceTray';
 import GameHUD from './GameHUD';
 import SettingsModal from './SettingsModal';
 import GameOverModal from './GameOverModal';
-import ContinueModal from './ContinueModal';
 import UndoButton from './UndoButton';
 import FeedbackText from './FeedbackText';
 import ParticleEffect from './ParticleEffect';
@@ -796,13 +795,16 @@ const BlockBlastGame: React.FC = () => {
       )}
       
       {/* Fixed HUD - TRUE OVERLAY, outside layout flow */}
-      <GameHUD
-        score={gameState.score}
-        bestScore={playerResources.highScore}
-        combo={gameState.combo}
-        itemResources={itemResources}
-        onOpenSettings={() => setShowSettingsModal(true)}
-      />
+      {/* Hide when game over or continue modal is showing */}
+      {!isGameOver && !showContinueModal && (
+        <GameHUD
+          score={gameState.score}
+          bestScore={playerResources.highScore}
+          combo={gameState.combo}
+          itemResources={itemResources}
+          onOpenSettings={() => setShowSettingsModal(true)}
+        />
+      )}
 
       {/* Main game container */}
       <div 
@@ -873,27 +875,27 @@ const BlockBlastGame: React.FC = () => {
           }}
         />
         
-        {/* Continue Modal */}
-        <ContinueModal
-          isOpen={showContinueModal}
-          score={gameState.score}
-          eligibility={checkContinueEligibility(
-            playerResources,
-            gameState.score,
-            gameState.combo,
-            getGridOccupancy(gameState.grid),
-            tutorial.isActive
-          )}
-          itemResources={itemResources}
-          onContinueFree={handleContinueFree}
-          onContinuePaid={handleContinuePaid}
-          onContinueAd={handleContinueAd}
-          onContinueCrystal={handleContinueCrystal}
-          onDecline={handleDeclineContinue}
-        />
-        
-        {isGameOver && (
-          <GameOverModal score={gameState.score} highScore={playerResources.highScore} onRestart={handleRestart} />
+        {/* Unified Game Over / Continue Modal */}
+        {(showContinueModal || isGameOver) && (
+          <GameOverModal 
+            score={gameState.score} 
+            highScore={playerResources.highScore} 
+            onRestart={handleRestart}
+            showContinueOptions={showContinueModal && !isGameOver}
+            eligibility={checkContinueEligibility(
+              playerResources,
+              gameState.score,
+              gameState.combo,
+              getGridOccupancy(gameState.grid),
+              tutorial.isActive
+            )}
+            itemResources={itemResources}
+            onContinueFree={handleContinueFree}
+            onContinuePaid={handleContinuePaid}
+            onContinueAd={handleContinueAd}
+            onContinueCrystal={handleContinueCrystal}
+            onDecline={handleDeclineContinue}
+          />
         )}
       </div>
       
