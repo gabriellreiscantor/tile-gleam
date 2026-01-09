@@ -31,40 +31,36 @@ const UndoButton: React.FC<UndoButtonProps> = ({
   // Show buy state when free is used and no paid undos
   const showBuyState = availability.canBuyUndo && !availability.canUndo;
 
+  // Determine which icon to show
+  const showFullIcon = availability.canUndo || showBuyState;
+  const iconSrc = showBuyState ? undoBuyIcon : undoFreeIcon;
+
   return (
     <button
       onClick={handleClick}
       disabled={!isClickable}
       className={cn(
         "relative flex items-center justify-center",
-        "w-14 h-14 rounded-2xl",
+        "w-14 h-14 rounded-2xl overflow-hidden",
         "transition-all duration-200",
-        availability.canUndo ? (
-          availability.isFree 
-            ? "bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/30"
-            : "bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30"
-        ) : showBuyState ? (
-          // Buy state - transparent bg, icon replaces entire button
-          "bg-transparent shadow-none"
-        ) : (
-          "bg-white/10 opacity-40"
-        ),
+        // Only show gradient bg when disabled (no icon)
+        !showFullIcon && "bg-white/10 opacity-40",
         isClickable && "active:scale-95",
         !isClickable && "cursor-not-allowed",
         className
       )}
     >
-      {showBuyState ? (
+      {showFullIcon ? (
         <img 
-          src={undoBuyIcon} 
-          alt="Buy Undo" 
-          className="w-14 h-14 object-contain"
+          src={iconSrc} 
+          alt={showBuyState ? "Buy Undo" : "Undo"} 
+          className="w-14 h-14 object-cover rounded-2xl"
         />
       ) : (
         <img 
           src={undoFreeIcon} 
           alt="Undo" 
-          className="w-10 h-10 object-contain"
+          className="w-14 h-14 object-cover rounded-2xl opacity-50"
         />
       )}
       
