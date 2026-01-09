@@ -1,8 +1,8 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Undo2 } from 'lucide-react';
 import type { UndoAvailability } from '@/lib/playerResources';
 import undoBuyIcon from '@/assets/undo-buy-icon.png';
+import undoFreeIcon from '@/assets/undo-free-icon.png';
 
 interface UndoButtonProps {
   availability: UndoAvailability;
@@ -61,7 +61,11 @@ const UndoButton: React.FC<UndoButtonProps> = ({
           className="w-14 h-14 object-contain"
         />
       ) : (
-        <Undo2 className="w-6 h-6 text-white" />
+        <img 
+          src={undoFreeIcon} 
+          alt="Undo" 
+          className="w-10 h-10 object-contain"
+        />
       )}
       
       {/* Badge - Free daily indicator (green "1") */}
