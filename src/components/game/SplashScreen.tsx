@@ -41,24 +41,21 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
         className="absolute inset-0 w-full h-full object-cover"
       />
       
-      {/* Content overlay */}
-      <div className="relative flex flex-col items-center gap-4 mt-[45%]">
+      {/* Content overlay - positioned at bottom */}
+      <div className="absolute bottom-[15%] left-0 right-0 flex flex-col items-center gap-4">
         {/* Game title */}
         <div className="text-center">
           <h1 
-            className="text-4xl font-bold tracking-tight drop-shadow-lg"
+            className="text-2xl font-bold tracking-tight drop-shadow-lg"
             style={{
-              background: 'linear-gradient(to bottom, hsl(0 0% 100%), hsl(200 50% 80%))',
+              background: 'linear-gradient(to bottom, hsl(30 100% 60%), hsl(25 100% 50%))',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
             }}
           >
-            Block Blast
+            Block Explosion: Puzzle Game
           </h1>
-          <p className="text-white/60 text-sm mt-1 drop-shadow">
-            Puzzle Game
-          </p>
         </div>
 
         {/* Loading indicator */}
