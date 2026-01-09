@@ -11,6 +11,7 @@ import FeedbackText from './FeedbackText';
 import ParticleEffect from './ParticleEffect';
 import TutorialOverlay from './TutorialOverlay';
 import CollectAnimation from './CollectAnimation';
+import BannerAd, { BANNER_HEIGHT } from './BannerAd';
 import {
   createInitialState,
   createEmptyGrid,
@@ -776,7 +777,7 @@ const BlockBlastGame: React.FC = () => {
         )}
         style={{
           paddingTop: 'max(calc(env(safe-area-inset-top) + 88px), 100px)',
-          paddingBottom: 'max(env(safe-area-inset-bottom), 16px)',
+          paddingBottom: `max(calc(env(safe-area-inset-bottom) + ${BANNER_HEIGHT}px), ${BANNER_HEIGHT + 16}px)`,
           paddingLeft: 'max(env(safe-area-inset-left), 12px)',
           paddingRight: 'max(env(safe-area-inset-right), 12px)',
         }}
@@ -859,6 +860,11 @@ const BlockBlastGame: React.FC = () => {
         {isGameOver && (
           <GameOverModal score={gameState.score} highScore={playerResources.highScore} onRestart={handleRestart} />
         )}
+      </div>
+      
+      {/* Banner Ad - Fixed at bottom, outside layout flow */}
+      <div className="fixed bottom-0 left-0 right-0 z-40">
+        <BannerAd />
       </div>
     </>
   );
