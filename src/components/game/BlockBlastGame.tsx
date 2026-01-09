@@ -64,9 +64,15 @@ import {
   addCollectedItems,
   spendCrystalsForContinue,
   canAffordCrystalContinue,
+  loadSessionStats,
+  saveSessionStats,
+  startNewGame as startNewItemGame,
+  recordCrystalCollected,
+  recordIceCollected,
   type ItemGrid,
   type ItemResources,
   type CollectedItem,
+  type ItemSessionStats,
 } from '@/lib/collectibles';
 import { preloadSounds, sounds, playBGM, stopBGM, setBGMEnabled, unlockAudioContext } from '@/lib/sounds';
 
@@ -137,6 +143,9 @@ const BlockBlastGame: React.FC = () => {
   const [itemResources, setItemResources] = useState<ItemResources>(loadItemResources);
   const [itemGrid, setItemGrid] = useState<ItemGrid>(() => createEmptyItemGrid());
   const [pendingCollection, setPendingCollection] = useState<CollectedItem[]>([]);
+  const [itemSessionStats, setItemSessionStats] = useState<ItemSessionStats>(() => 
+    startNewItemGame(loadSessionStats())
+  );
   
   const [showContinueModal, setShowContinueModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -196,6 +205,11 @@ const BlockBlastGame: React.FC = () => {
   useEffect(() => {
     saveItemResources(itemResources);
   }, [itemResources]);
+  
+  // Save item session stats on change
+  useEffect(() => {
+    saveSessionStats(itemSessionStats);
+  }, [itemSessionStats]);
   
   // Helper to generate pieces using RNG system
   const generatePiecesWithRng = useCallback((state: EngineState) => {
@@ -400,13 +414,20 @@ const BlockBlastGame: React.FC = () => {
       let newItemGrid = itemGrid;
       if (!tutorial.isActive) {
         const gridOccupancy = getGridOccupancy(result.next.grid);
-        const isTilt = playerResources.totalGamesPlayed > 3 && result.next.score < 50;
         newItemGrid = spawnItemsForPiece(
           itemGrid,
           piece.shape,
           gridX,
           gridY,
-          { gridOccupancy, isTilt }
+          { 
+            score: result.next.score,
+            combo: result.next.combo,
+            linesCleared: result.clear.linesCleared,
+            gridOccupancy,
+            sessionStats: itemSessionStats,
+            lastPlacedX: gridX,
+            lastPlacedY: gridY,
+          }
         );
       }
       
@@ -424,6 +445,18 @@ const BlockBlastGame: React.FC = () => {
             setPendingCollection(collectionResult.collected);
             // Update item resources
             setItemResources(prev => addCollectedItems(prev, collectionResult.collected));
+            // Update session stats for each collected item
+            setItemSessionStats(prev => {
+              let newStats = prev;
+              for (const item of collectionResult.collected) {
+                if (item.type === 'crystal') {
+                  newStats = recordCrystalCollected(newStats);
+                } else if (item.type === 'ice') {
+                  newStats = recordIceCollected(newStats);
+                }
+              }
+              return newStats;
+            });
             // Update item grid
             newItemGrid = collectionResult.newItemGrid;
             // Play collection sound
@@ -666,6 +699,8 @@ const BlockBlastGame: React.FC = () => {
     onGoodRun(rngStateRef.current, gameState.score);
     // Start new game in resources
     setPlayerResources(prev => startNewGame(prev));
+    // Start new item game session
+    setItemSessionStats(prev => startNewItemGame(prev));
     // Clear history
     historyRef.current = [];
     setLastMoveHadClear(false);
