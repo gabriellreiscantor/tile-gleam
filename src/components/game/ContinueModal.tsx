@@ -7,6 +7,7 @@ import {
   canAffordCrystalContinue,
   type ItemResources 
 } from '@/lib/collectibles';
+import SimulatedAdOverlay from './SimulatedAdOverlay';
 
 interface ContinueModalProps {
   isOpen: boolean;
@@ -33,8 +34,9 @@ const ContinueModal: React.FC<ContinueModalProps> = ({
 }) => {
   const [isLoadingAd, setIsLoadingAd] = useState(false);
   const [adError, setAdError] = useState<string | null>(null);
+  const [showSimulatedAd, setShowSimulatedAd] = useState(false);
 
-  if (!isOpen) return null;
+  if (!isOpen && !showSimulatedAd) return null;
 
   const { state, hasPaidContinue, canWatchAd } = eligibility;
   const canUseCrystals = canAffordCrystalContinue(itemResources);
@@ -47,16 +49,40 @@ const ContinueModal: React.FC<ContinueModalProps> = ({
       const result = await showRewardedAd();
       
       if (result.success) {
-        onContinueAd();
+        // Check if it's a simulated ad (web mode)
+        if (result.isSimulated) {
+          // Show the simulated ad overlay
+          setShowSimulatedAd(true);
+          setIsLoadingAd(false);
+        } else {
+          // Native ad completed
+          onContinueAd();
+        }
       } else {
         setAdError(result.error || 'Ad not available');
+        setIsLoadingAd(false);
       }
     } catch (e) {
       setAdError('Failed to show ad');
-    } finally {
       setIsLoadingAd(false);
     }
   };
+
+  const handleSimulatedAdComplete = () => {
+    setShowSimulatedAd(false);
+    onContinueAd();
+  };
+
+  // Show simulated ad overlay (fullscreen)
+  if (showSimulatedAd) {
+    return (
+      <SimulatedAdOverlay
+        isOpen={true}
+        onComplete={handleSimulatedAdComplete}
+        duration={5}
+      />
+    );
+  }
 
   // Determine title and subtitle based on state
   const getTitle = () => {

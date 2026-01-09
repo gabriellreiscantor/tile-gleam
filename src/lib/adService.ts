@@ -140,15 +140,16 @@ export interface RewardedAdResult {
   success: boolean;
   reward?: { type: string; amount: number };
   error?: string;
+  isSimulated?: boolean; // True when running on web - UI should show overlay
 }
 
 export async function showRewardedAd(): Promise<RewardedAdResult> {
-  // Web mode - simulate watching an ad
+  // Web mode - we'll handle this in the UI with SimulatedAdOverlay
+  // Just return success immediately - the overlay handles the timing
   if (!isNativePlatform()) {
-    console.log('[AdService] Web mode - simulating rewarded ad');
-    // Simulate ad duration
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    return { success: true, reward: { type: 'continue', amount: 1 } };
+    console.log('[AdService] Web mode - UI will show simulated ad overlay');
+    // Return a promise that the UI component will handle
+    return { success: true, reward: { type: 'continue', amount: 1 }, isSimulated: true };
   }
   
   if (!admobPlugin) {
