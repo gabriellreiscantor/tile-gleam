@@ -11,6 +11,7 @@ import ParticleEffect from './ParticleEffect';
 import TutorialOverlay from './TutorialOverlay';
 import CollectAnimation from './CollectAnimation';
 import BannerAd, { BANNER_HEIGHT } from './BannerAd';
+import UndoPurchaseModal from './UndoPurchaseModal';
 import {
   createInitialState,
   createEmptyGrid,
@@ -148,6 +149,8 @@ const BlockBlastGame: React.FC = () => {
   
   const [showContinueModal, setShowContinueModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showUndoPurchaseModal, setShowUndoPurchaseModal] = useState(false);
+  const [isUndoPurchaseLoading, setIsUndoPurchaseLoading] = useState(false);
   const [lastMoveHadClear, setLastMoveHadClear] = useState(false);
   
   // History for undo
@@ -707,9 +710,25 @@ const BlockBlastGame: React.FC = () => {
   }, [playerResources.soundEnabled, showFeedback]);
 
   const handleBuyUndo = useCallback(() => {
-    // In real app, show IAP purchase flow
-    console.log('Would show IAP for undo purchase');
+    setShowUndoPurchaseModal(true);
   }, []);
+
+  const handleUndoPurchaseConfirm = useCallback(() => {
+    setIsUndoPurchaseLoading(true);
+    // Simulate purchase - in production this would be real IAP
+    setTimeout(() => {
+      // Add 3 undos on successful purchase
+      setPlayerResources(prev => ({
+        ...prev,
+        paidUndos: prev.paidUndos + 3,
+      }));
+      setIsUndoPurchaseLoading(false);
+      setShowUndoPurchaseModal(false);
+      sounds.success(playerResources.soundEnabled);
+      showFeedback({ text: '+3 UNDO!', emoji: '🎉', intensity: 'high', color: 'amber' });
+      triggerHaptic('heavy');
+    }, 1500);
+  }, [playerResources.soundEnabled, showFeedback]);
 
   const handleCellHover = useCallback((x: number, y: number) => {
     if (!dragState) return;
@@ -948,6 +967,14 @@ const BlockBlastGame: React.FC = () => {
             onDecline={handleDeclineContinue}
           />
         )}
+        
+        {/* Undo Purchase Modal */}
+        <UndoPurchaseModal
+          isOpen={showUndoPurchaseModal}
+          onClose={() => setShowUndoPurchaseModal(false)}
+          onConfirm={handleUndoPurchaseConfirm}
+          isLoading={isUndoPurchaseLoading}
+        />
       </div>
       
       {/* Banner Ad - Fixed at bottom, outside layout flow */}
