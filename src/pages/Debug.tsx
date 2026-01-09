@@ -15,8 +15,13 @@ import {
   triggerHaptic,
   type FeedbackMessage,
 } from '@/lib/feedback';
-import type { ContinueEligibility } from '@/lib/playerResources';
-
+import { 
+  loadResources, 
+  saveResources, 
+  grantPremiumUndo, 
+  resetDailyUndo,
+  type ContinueEligibility 
+} from '@/lib/playerResources';
 const Debug: React.FC = () => {
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
   const [particleTrigger, setParticleTrigger] = useState<{ x: number; y: number; color: string } | null>(null);
@@ -308,6 +313,34 @@ const Debug: React.FC = () => {
             }}
           >
             🏆 New Record!
+          </Button>
+        </div>
+      </Section>
+
+      {/* Undo Debug */}
+      <Section title="↩️ UNDO SYSTEM">
+        <div className="flex flex-wrap gap-2 justify-center">
+          <Button
+            variant="outline"
+            className="border-amber-500/50"
+            onClick={() => {
+              const resources = loadResources();
+              saveResources(grantPremiumUndo(resources));
+              triggerHaptic('success');
+            }}
+          >
+            🎁 Give Premium Undo
+          </Button>
+          <Button
+            variant="outline"
+            className="border-green-500/50"
+            onClick={() => {
+              const resources = loadResources();
+              saveResources(resetDailyUndo(resources));
+              triggerHaptic('success');
+            }}
+          >
+            🔄 Reset Daily Undo
           </Button>
         </div>
       </Section>

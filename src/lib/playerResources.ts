@@ -2,12 +2,16 @@
 
 export interface PlayerResources {
   continues: number;
-  undos: number;
   swaps: number;
   clearCells: number;
   
   // Free continue tracking (one-time only)
   hasUsedFreeContinue: boolean;
+  
+  // Undo system: 1 free per day + unlimited paid (premium)
+  hasPaidUndo: boolean;          // Did user buy premium undo? (one-time purchase)
+  freeUndoUsedToday: boolean;    // Used the free daily undo?
+  lastFreeUndoDate: string;      // Date of last reset ("2026-01-09")
   
   // Settings
   soundEnabled: boolean;
@@ -24,17 +28,20 @@ export interface PlayerResources {
   // Per-game limits
   continuesUsedThisGame: number;
   undosUsedThisGame: number;
-  freeUndoUsedThisGame: boolean;
 }
 
 // Initial onboarding resources (generous!)
 const INITIAL_RESOURCES: PlayerResources = {
   continues: 2,
-  undos: 3,
   swaps: 2,
   clearCells: 1,
   
   hasUsedFreeContinue: false,
+  
+  // Undo: starts with free daily, no premium
+  hasPaidUndo: false,
+  freeUndoUsedToday: false,
+  lastFreeUndoDate: '',
   
   // Settings defaults
   soundEnabled: true,
@@ -49,7 +56,6 @@ const INITIAL_RESOURCES: PlayerResources = {
   
   continuesUsedThisGame: 0,
   undosUsedThisGame: 0,
-  freeUndoUsedThisGame: false,
 };
 
 const STORAGE_KEY = 'blockblast_player_resources';
@@ -61,12 +67,20 @@ export function loadResources(): PlayerResources {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Check if new day for session tracking
       const today = new Date().toDateString();
+      
+      // Check if new day for session tracking
       if (parsed.lastSessionDate !== today) {
         parsed.totalSessionsToday = 1;
         parsed.lastSessionDate = today;
       }
+      
+      // Reset free undo if new day!
+      if (parsed.lastFreeUndoDate !== today) {
+        parsed.freeUndoUsedToday = false;
+        parsed.lastFreeUndoDate = today;
+      }
+      
       return { ...INITIAL_RESOURCES, ...parsed };
     }
   } catch (e) {
@@ -91,7 +105,6 @@ export function startNewGame(resources: PlayerResources): PlayerResources {
     totalGamesPlayed: resources.totalGamesPlayed + 1,
     continuesUsedThisGame: 0,
     undosUsedThisGame: 0,
-    freeUndoUsedThisGame: false,
   };
 }
 
@@ -186,6 +199,7 @@ export function useContinue(resources: PlayerResources, type: 'free' | 'paid' | 
 }
 
 // ========== UNDO LOGIC ==========
+// System: 1 FREE per DAY + UNLIMITED paid (premium purchase)
 
 export interface UndoAvailability {
   canUndo: boolean;
@@ -203,31 +217,32 @@ export function checkUndoAvailability(
     return {
       canUndo: false,
       isFree: false,
-      hasPaidUndo: false,
+      hasPaidUndo: resources.hasPaidUndo,
       reason: 'Cannot undo after clearing lines',
     };
   }
   
-  // First undo is free per game
-  if (!resources.freeUndoUsedThisGame) {
+  // Check if free daily undo is available
+  if (!resources.freeUndoUsedToday) {
     return {
       canUndo: true,
       isFree: true,
-      hasPaidUndo: resources.undos > 0,
-      reason: 'Free undo',
+      hasPaidUndo: resources.hasPaidUndo,
+      reason: 'Free daily undo',
     };
   }
   
-  // After free undo, need paid
-  if (resources.undos > 0) {
+  // Free undo used today - check if has premium undo
+  if (resources.hasPaidUndo) {
     return {
       canUndo: true,
       isFree: false,
       hasPaidUndo: true,
-      reason: `${resources.undos} remaining`,
+      reason: 'Unlimited premium undo',
     };
   }
   
+  // No undos available
   return {
     canUndo: false,
     isFree: false,
@@ -240,13 +255,19 @@ export function useUndo(resources: PlayerResources): PlayerResources {
   const updated = { ...resources };
   updated.undosUsedThisGame += 1;
   
-  if (!updated.freeUndoUsedThisGame) {
-    updated.freeUndoUsedThisGame = true;
-  } else {
-    updated.undos = Math.max(0, updated.undos - 1);
+  // If using free daily undo, mark it as used
+  if (!updated.freeUndoUsedToday) {
+    updated.freeUndoUsedToday = true;
+    updated.lastFreeUndoDate = new Date().toDateString();
   }
+  // If using paid undo, DON'T decrement - it's unlimited!
   
   return updated;
+}
+
+// Purchase premium undo (one-time, unlimited use)
+export function purchasePaidUndo(resources: PlayerResources): PlayerResources {
+  return { ...resources, hasPaidUndo: true };
 }
 
 // ========== HIGH SCORE ==========
@@ -312,16 +333,25 @@ export function getAppVersion(): string {
 export function addResources(
   resources: PlayerResources,
   continues: number,
-  undos: number
+  _undos: number // Unused now - undo is daily/premium based
 ): PlayerResources {
   return {
     ...resources,
     continues: resources.continues + continues,
-    undos: resources.undos + undos,
   };
 }
 
 export function resetResources(): PlayerResources {
   localStorage.removeItem(STORAGE_KEY);
   return { ...INITIAL_RESOURCES };
+}
+
+// Debug: Give premium undo
+export function grantPremiumUndo(resources: PlayerResources): PlayerResources {
+  return { ...resources, hasPaidUndo: true };
+}
+
+// Debug: Reset daily undo (for testing)
+export function resetDailyUndo(resources: PlayerResources): PlayerResources {
+  return { ...resources, freeUndoUsedToday: false };
 }
