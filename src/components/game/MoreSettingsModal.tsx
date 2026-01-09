@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, ChevronRight, Mail, Share2, Youtube, FileText, Shield, Info, Settings } from 'lucide-react';
-import { getAppVersion } from '@/lib/settings';
+import { getAppVersion } from '@/lib/playerResources';
 
 // Page components
 import TermsOfServicePage from '@/pages/legal/TermsOfService';

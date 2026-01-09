@@ -2,7 +2,7 @@
 // Uses @capacitor-community/admob on native, placeholder on web
 
 import { getAdUnitId, getPlatform, isNativePlatform, AD_CONFIG } from './adConfig';
-import { loadSettings } from './settings';
+import { loadSettings } from './playerResources';
 
 type AdMobPlugin = {
   initialize: (options: { initializeForTesting?: boolean }) => Promise<void>;

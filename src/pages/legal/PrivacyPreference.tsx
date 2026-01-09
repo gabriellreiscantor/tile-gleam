@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Target, BarChart3 } from 'lucide-react';
-import { loadSettings, saveSettings, type GameSettings } from '@/lib/settings';
+import { loadSettings, saveSettings, type GameSettings } from '@/lib/playerResources';
 import { cn } from '@/lib/utils';
 
 interface PrivacyPreferencePageProps {
