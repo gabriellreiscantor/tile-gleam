@@ -759,30 +759,28 @@ const BlockBlastGame: React.FC = () => {
         />
       )}
       
+      {/* Fixed HUD - TRUE OVERLAY, outside layout flow */}
+      <GameHUD
+        score={gameState.score}
+        bestScore={playerResources.highScore}
+        combo={gameState.combo}
+        itemResources={itemResources}
+        onOpenSettings={() => setShowSettingsModal(true)}
+      />
+
+      {/* Main game container */}
       <div 
         className={cn(
           "fixed inset-0 flex flex-col items-center overflow-hidden",
           screenShake && "screen-shake"
         )}
         style={{
-          paddingTop: 'max(env(safe-area-inset-top), 16px)',
+          paddingTop: 'max(calc(env(safe-area-inset-top) + 88px), 100px)',
           paddingBottom: 'max(env(safe-area-inset-bottom), 16px)',
           paddingLeft: 'max(env(safe-area-inset-left), 12px)',
           paddingRight: 'max(env(safe-area-inset-right), 12px)',
         }}
       >
-        {/* HUD is fixed, so we just need a spacer to push content down */}
-        <div className="h-[84px] flex-shrink-0" />
-        
-        {/* Fixed HUD - rendered outside flow */}
-        <GameHUD
-          score={gameState.score}
-          bestScore={playerResources.highScore}
-          combo={gameState.combo}
-          itemResources={itemResources}
-          onOpenSettings={() => setShowSettingsModal(true)}
-        />
-        
         {/* Board - Center, fills available space */}
         <div className="flex-1 flex items-center justify-center w-full min-h-0 py-3">
           <div ref={boardRef}>

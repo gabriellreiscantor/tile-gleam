@@ -1,6 +1,6 @@
 import React from "react";
-import ItemHUD from "./ItemHUD";
 import type { ItemResources } from "@/lib/collectibles";
+import { cn } from "@/lib/utils";
 
 type GameHUDProps = {
   score: number;
@@ -9,6 +9,14 @@ type GameHUDProps = {
   itemResources?: ItemResources;
   onOpenSettings: () => void;
 };
+
+// Compact pill for items
+const HUDPill: React.FC<{ icon: string; value: number }> = ({ icon, value }) => (
+  <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-white/10 backdrop-blur-sm">
+    <span className="text-sm leading-none">{icon}</span>
+    <span className="text-sm font-semibold text-white">{value}</span>
+  </div>
+);
 
 const GameHUD: React.FC<GameHUDProps> = ({
   score,
@@ -19,65 +27,62 @@ const GameHUD: React.FC<GameHUDProps> = ({
 }) => {
   return (
     <div
-      className="fixed left-0 right-0 top-0 z-50 w-full select-none"
+      className="fixed top-0 left-0 right-0 z-50 pointer-events-auto select-none"
       style={{
-        paddingTop: "max(env(safe-area-inset-top), 12px)",
+        paddingTop: "max(env(safe-area-inset-top), 8px)",
         paddingLeft: "max(env(safe-area-inset-left), 12px)",
         paddingRight: "max(env(safe-area-inset-right), 12px)",
       }}
     >
-      {/* Inner wrapper: max-w para não ficar gigante em desktop */}
-      <div className="relative mx-auto w-full max-w-[520px] h-[72px]">
-        {/* LEFT — BEST */}
-        <div className="absolute left-0 top-0 flex flex-col items-start">
-          <div className="flex items-center gap-1">
-            <span className="text-[14px] leading-none">👑</span>
-            <span className="text-[11px] tracking-[0.20em] text-yellow-300/90">
-              BEST
-            </span>
-          </div>
-          <div className="mt-1 text-[18px] font-extrabold text-yellow-300 drop-shadow">
+      {/* Relative container for absolute positioning */}
+      <div className="relative h-[72px] mx-auto max-w-[520px]">
+        
+        {/* LEFT — BEST SCORE */}
+        <div className="absolute left-0 top-2 flex items-center gap-1">
+          <span className="text-lg leading-none">👑</span>
+          <span className="text-yellow-400 font-extrabold text-lg drop-shadow">
             {bestScore}
-          </div>
+          </span>
         </div>
 
-        {/* CENTER — SCORE + COMBO */}
-        <div className="absolute left-1/2 top-0 -translate-x-1/2 flex flex-col items-center">
-          <div className="text-[11px] tracking-[0.25em] text-white/70">
-            SCORE
-          </div>
-          <div className="mt-1 text-[34px] font-extrabold text-white drop-shadow">
+        {/* CENTER — SCORE + COMBO (TRUE CENTER) */}
+        <div className="absolute left-1/2 top-1 -translate-x-1/2 flex flex-col items-center">
+          <span className="text-[11px] tracking-[0.25em] text-white/70 uppercase">
+            Score
+          </span>
+          <span className="text-white text-3xl font-extrabold drop-shadow-lg">
             {score}
-          </div>
+          </span>
           {combo > 1 && (
-            <div className="mt-0.5 text-[12px] font-bold text-cyan-300/90">
+            <span className="text-cyan-300 text-xs font-bold mt-0.5">
               🔥 x{combo}
-            </div>
+            </span>
           )}
         </div>
 
         {/* RIGHT — ITEMS + SETTINGS */}
-        <div className="absolute right-0 top-0 flex items-start gap-2">
-          {/* Item counters */}
+        <div className="absolute right-0 top-2 flex items-center gap-2">
+          {/* Item counters (smaller than score) */}
           {itemResources && (
-            <ItemHUD resources={itemResources} className="mt-1" />
+            <>
+              <HUDPill icon="💎" value={itemResources.crystals} />
+              <HUDPill icon="❄️" value={itemResources.ice} />
+            </>
           )}
           
           {/* Settings button */}
           <button
             type="button"
             onClick={onOpenSettings}
-            className="
-              h-11 w-11
-              rounded-2xl
-              bg-white/10
-              backdrop-blur
-              flex items-center justify-center
-              active:scale-95
-            "
+            className={cn(
+              "h-10 w-10 rounded-xl",
+              "bg-white/10 backdrop-blur-sm",
+              "flex items-center justify-center",
+              "active:scale-95 transition-transform"
+            )}
             aria-label="Settings"
           >
-            <span className="text-[18px] leading-none">⚙️</span>
+            <span className="text-lg leading-none">⚙️</span>
           </button>
         </div>
       </div>
