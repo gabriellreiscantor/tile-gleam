@@ -1,7 +1,8 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Undo2, ShoppingCart } from 'lucide-react';
+import { Undo2 } from 'lucide-react';
 import type { UndoAvailability } from '@/lib/playerResources';
+import undoBuyIcon from '@/assets/undo-buy-icon.png';
 
 interface UndoButtonProps {
   availability: UndoAvailability;
@@ -43,8 +44,8 @@ const UndoButton: React.FC<UndoButtonProps> = ({
             ? "bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/30"
             : "bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30"
         ) : showBuyState ? (
-          // Buy state - orange with cart icon
-          "bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30"
+          // Buy state - transparent bg, icon replaces entire button
+          "bg-transparent shadow-none"
         ) : (
           "bg-white/10 opacity-40"
         ),
@@ -54,7 +55,11 @@ const UndoButton: React.FC<UndoButtonProps> = ({
       )}
     >
       {showBuyState ? (
-        <ShoppingCart className="w-6 h-6 text-white" />
+        <img 
+          src={undoBuyIcon} 
+          alt="Buy Undo" 
+          className="w-14 h-14 object-contain"
+        />
       ) : (
         <Undo2 className="w-6 h-6 text-white" />
       )}
@@ -70,13 +75,6 @@ const UndoButton: React.FC<UndoButtonProps> = ({
       {!availability.isFree && availability.hasPaidUndos && availability.canUndo && (
         <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
           <span className="text-[10px] font-bold text-white">{availability.paidUndoCount}</span>
-        </div>
-      )}
-      
-      {/* Badge - Buy indicator ($) when in buy state */}
-      {showBuyState && (
-        <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-          <span className="text-[10px] font-bold text-white">$</span>
         </div>
       )}
     </button>
