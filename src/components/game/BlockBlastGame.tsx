@@ -424,6 +424,7 @@ const BlockBlastGame: React.FC = () => {
             linesCleared: result.clear.linesCleared,
             gridOccupancy,
             sessionStats: itemSessionStats,
+            lifetimeGames: playerResources.totalGamesPlayed,
             lastPlacedX: gridX,
             lastPlacedY: gridY,
           }

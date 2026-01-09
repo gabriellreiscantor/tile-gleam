@@ -35,6 +35,7 @@ export interface ItemSessionStats {
   currentGameNumber: number;
   crystalsThisGame: number;
   iceThisGame: number;
+  hasEverCollectedCrystal: boolean; // For guaranteed first crystal
 }
 
 const SESSION_STATS_KEY = 'blockblast_item_session';
@@ -56,6 +57,7 @@ export function loadSessionStats(): ItemSessionStats {
     currentGameNumber: 0,
     crystalsThisGame: 0,
     iceThisGame: 0,
+    hasEverCollectedCrystal: false,
   };
 }
 
@@ -81,6 +83,7 @@ export function recordCrystalCollected(stats: ItemSessionStats): ItemSessionStat
     ...stats,
     crystalsCollectedLast10Games: Math.min(stats.crystalsCollectedLast10Games + 1, 10),
     crystalsThisGame: stats.crystalsThisGame + 1,
+    hasEverCollectedCrystal: true,
   };
 }
 
@@ -131,6 +134,7 @@ interface SpawnContext {
   linesCleared: number;        // Lines cleared THIS action
   gridOccupancy: number;       // 0-1
   sessionStats: ItemSessionStats;
+  lifetimeGames: number;       // Total games played for guaranteed first crystal
   lastPlacedX?: number;
   lastPlacedY?: number;
 }
@@ -152,23 +156,33 @@ function isEarlyGame(score: number): boolean {
 
 /**
  * 💎 CRYSTAL ELIGIBILITY - EXTREMELY STRICT
+ * With GUARANTEED first crystal between games 30-50
  */
-function isCrystalEligible(ctx: SpawnContext): boolean {
+function isCrystalEligible(ctx: SpawnContext): { eligible: boolean; guaranteed: boolean } {
   // Block early game completely
-  if (isEarlyGame(ctx.score)) return false;
-  
-  // Block if already collected crystal in last 10 games
-  if (ctx.sessionStats.crystalsCollectedLast10Games >= 1) return false;
+  if (isEarlyGame(ctx.score)) return { eligible: false, guaranteed: false };
   
   // Block if already got crystal this game
-  if (ctx.sessionStats.crystalsThisGame >= 1) return false;
+  if (ctx.sessionStats.crystalsThisGame >= 1) return { eligible: false, guaranteed: false };
+  
+  // GUARANTEED FIRST CRYSTAL: Between lifetime games 30-50
+  const isInGuaranteedWindow = ctx.lifetimeGames >= 30 && ctx.lifetimeGames <= 50;
+  const neverCollected = !ctx.sessionStats.hasEverCollectedCrystal;
+  
+  if (isInGuaranteedWindow && neverCollected) {
+    // Skip normal restrictions - guaranteed to spawn!
+    return { eligible: true, guaranteed: true };
+  }
+  
+  // Normal rules: Block if already collected crystal in last 10 games
+  if (ctx.sessionStats.crystalsCollectedLast10Games >= 1) return { eligible: false, guaranteed: false };
   
   // MUST meet at least one skill condition:
   const clearedEnough = ctx.linesCleared >= 3;
   const highCombo = ctx.combo >= 4;
   const gridDanger = ctx.gridOccupancy >= 0.65;
   
-  return clearedEnough || highCombo || gridDanger;
+  return { eligible: clearedEnough || highCombo || gridDanger, guaranteed: false };
 }
 
 /**
@@ -216,7 +230,13 @@ export function trySpawnItem(
   if (countActiveItems(itemGrid) >= 1) return null;
   
   // Try Crystal first (if eligible)
-  if (isCrystalEligible(context)) {
+  const crystalCheck = isCrystalEligible(context);
+  if (crystalCheck.eligible) {
+    if (crystalCheck.guaranteed) {
+      // 100% spawn for guaranteed first crystal!
+      console.log('[Crystal] GUARANTEED first crystal spawned!');
+      return 'crystal';
+    }
     const roll = Math.random();
     if (roll < BASE_CHANCES.crystal) {
       return 'crystal';
