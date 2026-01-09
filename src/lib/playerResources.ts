@@ -269,6 +269,44 @@ export function shouldShowStore(resources: PlayerResources): boolean {
   return resources.totalGamesPlayed >= 3;
 }
 
+// ========== SETTINGS HELPERS ==========
+
+export interface GameSettings {
+  personalizedAds: boolean;
+  analyticsEnabled: boolean;
+}
+
+const DEFAULT_SETTINGS: GameSettings = {
+  personalizedAds: true,
+  analyticsEnabled: true,
+};
+
+const SETTINGS_KEY = 'blockblast_settings';
+
+export function loadSettings(): GameSettings {
+  try {
+    const saved = localStorage.getItem(SETTINGS_KEY);
+    if (saved) {
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+    }
+  } catch (e) {
+    console.error('Failed to load settings:', e);
+  }
+  return { ...DEFAULT_SETTINGS };
+}
+
+export function saveSettings(settings: GameSettings): void {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch (e) {
+    console.error('Failed to save settings:', e);
+  }
+}
+
+export function getAppVersion(): string {
+  return '1.0.0';
+}
+
 // ========== DEV/DEBUG ==========
 
 export function addResources(

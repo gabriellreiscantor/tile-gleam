@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowLeft, Heart } from 'lucide-react';
-import { getAppVersion } from '@/lib/settings';
+import { getAppVersion } from '@/lib/playerResources';
 
 interface AboutPageProps {
   onBack: () => void;
