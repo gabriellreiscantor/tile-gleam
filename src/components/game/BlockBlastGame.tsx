@@ -626,7 +626,10 @@ const BlockBlastGame: React.FC = () => {
     // Update high score
     setPlayerResources(prev => updateHighScore(prev, finalState.score));
     
-    // Play game over sound at start of flood
+    // Stop BGM and play game over sound
+    if (playerResources.musicEnabled) {
+      stopBGM();
+    }
     sounds.gameOver(playerResources.soundEnabled);
     
     // Start flood animation, then show modal/game over
