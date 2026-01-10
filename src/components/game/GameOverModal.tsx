@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, RotateCcw, Crown } from 'lucide-react';
+import { Play, RotateCcw, Crown, Film } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ContinueEligibility } from '@/lib/playerResources';
 import { showRewardedAd } from '@/lib/adService';
@@ -9,6 +9,7 @@ import {
   type ItemResources 
 } from '@/lib/collectibles';
 import SimulatedAdOverlay from './SimulatedAdOverlay';
+import type { ReplayData } from '@/lib/replayRecorder';
 
 interface GameOverModalProps {
   score: number;
@@ -23,6 +24,9 @@ interface GameOverModalProps {
   onContinueAd?: () => void;
   onContinueCrystal?: () => void;
   onDecline?: () => void;
+  // Replay
+  replayData?: ReplayData | null;
+  onWatchReplay?: () => void;
 }
 
 const GameOverModal: React.FC<GameOverModalProps> = ({ 
@@ -37,6 +41,8 @@ const GameOverModal: React.FC<GameOverModalProps> = ({
   onContinueAd,
   onContinueCrystal,
   onDecline,
+  replayData,
+  onWatchReplay,
 }) => {
   const [isLoadingAd, setIsLoadingAd] = useState(false);
   const [adError, setAdError] = useState<string | null>(null);
@@ -322,6 +328,26 @@ const GameOverModal: React.FC<GameOverModalProps> = ({
               </button>
             )}
           </div>
+        )}
+
+        {/* Replay Button - Only show when game is over (not continue options) and has replay data */}
+        {!showContinueOptions && replayData && replayData.moves.length > 0 && (
+          <button
+            onClick={onWatchReplay}
+            className={cn(
+              "flex items-center justify-center gap-3",
+              "px-8 py-3 rounded-2xl mb-4",
+              "font-bold text-base",
+              "transition-all duration-200 active:scale-95",
+              "bg-white/10 text-white/80 border border-white/20"
+            )}
+            style={{
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+            }}
+          >
+            <Film className="w-5 h-5" />
+            <span>Watch Replay</span>
+          </button>
         )}
 
         {/* Play Again Button */}
