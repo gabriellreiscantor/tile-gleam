@@ -99,7 +99,7 @@ const StarConvergence: React.FC<StarConvergenceProps> = ({
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             <p className="text-lg text-yellow-200 font-medium animate-pulse">
-              {affectedCells.length} blocks converging...
+              {affectedCells.length} blocks clearing...
             </p>
           </div>
         </div>
