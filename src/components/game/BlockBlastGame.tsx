@@ -8,6 +8,7 @@ import GameOverModal from './GameOverModal';
 import UndoButton from './UndoButton';
 import FeedbackText from './FeedbackText';
 import ParticleEffect from './ParticleEffect';
+import StarConvergence from './StarConvergence';
 import TutorialOverlay from './TutorialOverlay';
 import CollectAnimation from './CollectAnimation';
 import BannerAd, { BANNER_HEIGHT } from './BannerAd';
@@ -65,11 +66,17 @@ import {
   addCollectedItems,
   spendCrystalsForContinue,
   canAffordCrystalContinue,
+  findDominantColor,
+  getCellsOfColor,
+  applyStarConvergence,
+  calculateStarScore,
+  spendStar,
+  canUseStar,
   loadSessionStats,
   saveSessionStats,
   startNewGame as startNewItemGame,
   recordCrystalCollected,
-  recordIceCollected,
+  recordStarCollected,
   type ItemGrid,
   type ItemResources,
   type CollectedItem,
@@ -162,6 +169,14 @@ const BlockBlastGame: React.FC = () => {
   const [isUndoPurchaseLoading, setIsUndoPurchaseLoading] = useState(false);
   const [lastMoveHadClear, setLastMoveHadClear] = useState(false);
   
+  // Star Convergence state
+  const [isStarActive, setIsStarActive] = useState(false);
+  const [starAnimationData, setStarAnimationData] = useState<{
+    dominantColor: number;
+    affectedCells: { x: number; y: number }[];
+    totalPoints: number;
+  } | null>(null);
+  
   // ========== REPLAY STATE ==========
   const recorderRef = useRef<RecorderState>(startRecording(createRecorderState()));
   const [currentReplay, setCurrentReplay] = useState<ReplayData | null>(null);
@@ -234,11 +249,11 @@ const BlockBlastGame: React.FC = () => {
   // Debug: Force spawn item from debug page
   useEffect(() => {
     const forcedItem = localStorage.getItem('debug_force_spawn_item');
-    if (forcedItem && (forcedItem === 'crystal' || forcedItem === 'ice')) {
+    if (forcedItem && (forcedItem === 'crystal' || forcedItem === 'star')) {
       // Colocar o item no itemGrid
       setItemGrid(prev => {
         const newGrid = prev.map(row => [...row]);
-        newGrid[3][3] = forcedItem as 'crystal' | 'ice';
+        newGrid[3][3] = forcedItem as 'crystal' | 'star';
         return newGrid;
       });
       
@@ -533,8 +548,8 @@ const BlockBlastGame: React.FC = () => {
               for (const item of collectionResult.collected) {
                 if (item.type === 'crystal') {
                   newStats = recordCrystalCollected(newStats);
-                } else if (item.type === 'ice') {
-                  newStats = recordIceCollected(newStats);
+                } else if (item.type === 'star') {
+                  newStats = recordStarCollected(newStats);
                 }
               }
               return newStats;
@@ -961,6 +976,35 @@ const BlockBlastGame: React.FC = () => {
         />
       )}
       
+      {/* Star Convergence Animation */}
+      {isStarActive && starAnimationData && (
+        <StarConvergence
+          isActive={isStarActive}
+          dominantColor={starAnimationData.dominantColor}
+          affectedCells={starAnimationData.affectedCells}
+          totalPoints={starAnimationData.totalPoints}
+          onComplete={() => {
+            if (!starAnimationData) return;
+            
+            // Clear cells and add points
+            const newGrid = applyStarConvergence(gameState.grid, starAnimationData.affectedCells);
+            const newScore = gameState.score + starAnimationData.totalPoints;
+            
+            setGameState(prev => ({
+              ...prev,
+              grid: newGrid,
+              score: newScore,
+              combo: 1, // Reset combo
+            }));
+            
+            setIsStarActive(false);
+            setStarAnimationData(null);
+            
+            showFeedback({ text: 'LEGENDARY!', emoji: '⭐', intensity: 'high', color: 'yellow' });
+          }}
+        />
+      )}
+      
       {/* Tutorial overlay */}
       {tutorial.isActive && (
         <TutorialOverlay
@@ -972,11 +1016,33 @@ const BlockBlastGame: React.FC = () => {
       
       {/* Fixed HUD - TRUE OVERLAY, outside layout flow */}
       {/* Hide when game over or continue modal is showing */}
-      {!isGameOver && !showContinueModal && (
-        <GameHUD
-          score={gameState.score}
-          bestScore={playerResources.highScore}
-          combo={gameState.combo}
+        {!isGameOver && !showContinueModal && (
+          <GameHUD
+            score={gameState.score}
+            bestScore={playerResources.highScore}
+            combo={gameState.combo}
+            itemResources={itemResources}
+            onOpenSettings={() => setShowSettingsModal(true)}
+            onActivateStar={() => {
+              if (!canUseStar(itemResources) || isStarActive) return;
+              
+              const dominantColor = findDominantColor(gameState.grid);
+              if (!dominantColor) return;
+              
+              const affectedCells = getCellsOfColor(gameState.grid, dominantColor);
+              if (affectedCells.length === 0) return;
+              
+              const totalPoints = calculateStarScore(affectedCells.length);
+              
+              setItemResources(prev => spendStar(prev));
+              setStarAnimationData({ dominantColor, affectedCells, totalPoints });
+              setIsStarActive(true);
+              
+              sounds.levelup(playerResources.soundEnabled);
+              triggerHaptic('heavy');
+            }}
+            starDisabled={isStarActive}
+          />
           itemResources={itemResources}
           onOpenSettings={() => setShowSettingsModal(true)}
         />

@@ -53,7 +53,7 @@ const ItemHUD: React.FC<ItemHUDProps> = ({ resources, className }) => {
       className
     )}>
       <AnimatedCounter value={resources.crystals} emoji="💎" />
-      <AnimatedCounter value={resources.ice} emoji="❄️" />
+      <AnimatedCounter value={resources.stars} emoji="⭐" />
     </div>
   );
 };

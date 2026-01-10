@@ -354,9 +354,26 @@ const Debug: React.FC = () => {
       </Section>
 
       {/* Collectibles Debug */}
-      <Section title="💎❄️ COLLECTIBLES">
+      <Section title="💎⭐ COLLECTIBLES">
         <div className="mb-4">
           <ItemHUD resources={itemResources} />
+        </div>
+        <div className="text-xs text-muted-foreground mb-4 space-y-2 max-w-xs text-left">
+          <div>
+            <strong className="text-purple-400">💎 Crystal</strong> — Moeda premium
+            <ul className="ml-4 list-disc">
+              <li>3💎 → Continue extra</li>
+              <li>2💎 → Re-roll peças</li>
+            </ul>
+          </div>
+          <div>
+            <strong className="text-yellow-400">⭐ Star</strong> — Evento épico (ultra raro!)
+            <ul className="ml-4 list-disc">
+              <li>1⭐ → COLOR CONVERGENCE</li>
+              <li>Converte cor dominante → explosão massiva</li>
+              <li>Multiplicador ×2.5 nos pontos</li>
+            </ul>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2 justify-center">
           <Button
@@ -373,21 +390,21 @@ const Debug: React.FC = () => {
           </Button>
           <Button
             variant="outline"
-            className="border-cyan-500/50"
+            className="border-yellow-500/50"
             onClick={() => {
-              const updated = { ...itemResources, ice: Math.min(itemResources.ice + 1, 2) };
+              const updated = { ...itemResources, stars: itemResources.stars + 1 };
               saveItemResources(updated);
               setItemResources(updated);
               triggerHaptic('success');
             }}
           >
-            ❄️ +1 Ice
+            ⭐ +1 Star
           </Button>
           <Button
             variant="outline"
             className="border-red-500/50"
             onClick={() => {
-              const reset = { crystals: 0, ice: 0 };
+              const reset = { crystals: 0, stars: 0 };
               saveItemResources(reset);
               setItemResources(reset);
               triggerHaptic('warning');
@@ -425,13 +442,13 @@ const Debug: React.FC = () => {
           </Button>
           <Button
             variant="outline"
-            className="border-cyan-500/50 bg-cyan-500/10"
+            className="border-yellow-500/50 bg-yellow-500/10"
             onClick={() => {
-              localStorage.setItem('debug_force_spawn_item', 'ice');
+              localStorage.setItem('debug_force_spawn_item', 'star');
               window.location.href = '/';
             }}
           >
-            ❄️ Jogar com Ice
+            ⭐ Jogar com Star
           </Button>
         </div>
       </Section>
@@ -452,7 +469,7 @@ const Debug: React.FC = () => {
             hasPaidContinue: true,
             canWatchAd: continueState === 'ad',
           } as ContinueEligibility}
-          itemResources={{ crystals: 5, ice: 3 }}
+          itemResources={{ crystals: 5, stars: 1 }}
           onContinueFree={() => {
             setShowContinueModal(false);
             showFeedback({ text: 'FREE CONTINUE!', emoji: '🎁', intensity: 'high', color: 'green' });
