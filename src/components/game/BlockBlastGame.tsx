@@ -12,6 +12,7 @@ import TutorialOverlay from './TutorialOverlay';
 import CollectAnimation from './CollectAnimation';
 import BannerAd, { BANNER_HEIGHT } from './BannerAd';
 import UndoPurchaseModal from './UndoPurchaseModal';
+import ReplayPlayer from './ReplayPlayer';
 import {
   createInitialState,
   createEmptyGrid,
@@ -75,7 +76,14 @@ import {
   type ItemSessionStats,
 } from '@/lib/collectibles';
 import { preloadSounds, sounds, playBGM, stopBGM, setBGMEnabled, unlockAudioContext } from '@/lib/sounds';
-
+import {
+  type ReplayData,
+  type RecorderState,
+  createRecorderState,
+  startRecording,
+  recordMove,
+  finishRecording,
+} from '@/lib/replayRecorder';
 // Convert RNG piece to GamePiece format
 interface GamePiece {
   shape: number[][];
@@ -152,6 +160,11 @@ const BlockBlastGame: React.FC = () => {
   const [showUndoPurchaseModal, setShowUndoPurchaseModal] = useState(false);
   const [isUndoPurchaseLoading, setIsUndoPurchaseLoading] = useState(false);
   const [lastMoveHadClear, setLastMoveHadClear] = useState(false);
+  
+  // ========== REPLAY STATE ==========
+  const recorderRef = useRef<RecorderState>(startRecording(createRecorderState()));
+  const [currentReplay, setCurrentReplay] = useState<ReplayData | null>(null);
+  const [showReplayPlayer, setShowReplayPlayer] = useState(false);
   
   // History for undo
   const historyRef = useRef<{ state: EngineState; pieces: (GamePiece | null)[]; itemGrid: ItemGrid }[]>([]);
@@ -409,6 +422,21 @@ const BlockBlastGame: React.FC = () => {
       const hadClear = result.clear.linesCleared > 0;
       setLastMoveHadClear(hadClear);
       
+      // Record move for replay (skip in tutorial)
+      if (!tutorial.isActive) {
+        recorderRef.current = recordMove(recorderRef.current, {
+          pieceId: piece.id,
+          pieceShape: piece.shape,
+          colorId: piece.colorId,
+          gridX,
+          gridY,
+          scoreAfter: result.next.score,
+          comboAfter: result.next.combo,
+          linesCleared: result.clear.linesCleared,
+          gridSnapshot: result.next.grid,
+        });
+      }
+      
       // Tutorial: Advance to reward step after successful drop
       if (tutorial.isActive && tutorial.currentStep === 'drop-piece') {
         setTutorial(advanceTutorial); // -> 'reward'
@@ -623,6 +651,14 @@ const BlockBlastGame: React.FC = () => {
       gridOccupancy
     );
     
+    // Finish recording and save replay data
+    const replayData = finishRecording(
+      recorderRef.current,
+      finalState.score,
+      playerResources.highScore
+    );
+    setCurrentReplay(replayData);
+    
     // Update high score
     setPlayerResources(prev => updateHighScore(prev, finalState.score));
     
@@ -784,11 +820,25 @@ const BlockBlastGame: React.FC = () => {
     setDragState(null);
     setGhostState(null);
     
+    // Reset replay recorder for new game
+    recorderRef.current = startRecording(createRecorderState());
+    setCurrentReplay(null);
+    setShowReplayPlayer(false);
+    
     // Restart BGM if music is enabled
     if (playerResources.musicEnabled) {
       playBGM();
     }
   }, [gameState.score, generatePiecesWithRng, playerResources.musicEnabled]);
+  
+  // ========== REPLAY HANDLERS ==========
+  const handleWatchReplay = useCallback(() => {
+    setShowReplayPlayer(true);
+  }, []);
+  
+  const handleCloseReplay = useCallback(() => {
+    setShowReplayPlayer(false);
+  }, []);
 
   // Transform ghostState to GameBoard format
   const ghostPosition = ghostState ? {
@@ -949,7 +999,7 @@ const BlockBlastGame: React.FC = () => {
         />
         
         {/* Unified Game Over / Continue Modal */}
-        {(showContinueModal || isGameOver) && (
+        {(showContinueModal || isGameOver) && !showReplayPlayer && (
           <GameOverModal 
             score={gameState.score} 
             highScore={playerResources.highScore} 
@@ -968,6 +1018,17 @@ const BlockBlastGame: React.FC = () => {
             onContinueAd={handleContinueAd}
             onContinueCrystal={handleContinueCrystal}
             onDecline={handleDeclineContinue}
+            replayData={currentReplay}
+            onWatchReplay={handleWatchReplay}
+          />
+        )}
+        
+        {/* Replay Player */}
+        {showReplayPlayer && currentReplay && (
+          <ReplayPlayer
+            replay={currentReplay}
+            onClose={handleCloseReplay}
+            onRestart={handleRestart}
           />
         )}
         
