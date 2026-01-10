@@ -22,6 +22,13 @@ import {
   resetDailyUndo,
   type ContinueEligibility 
 } from '@/lib/playerResources';
+import ItemHUD from '@/components/game/ItemHUD';
+import { 
+  loadItemResources, 
+  saveItemResources, 
+  loadSessionStats,
+  type ItemResources 
+} from '@/lib/collectibles';
 const Debug: React.FC = () => {
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
   const [particleTrigger, setParticleTrigger] = useState<{ x: number; y: number; color: string } | null>(null);
@@ -31,6 +38,7 @@ const Debug: React.FC = () => {
   const [showGameOverModal, setShowGameOverModal] = useState(false);
   const [gameOverIsRecord, setGameOverIsRecord] = useState(false);
   const [continueState, setContinueState] = useState<'free' | 'ad' | 'paid-only'>('free');
+  const [itemResources, setItemResources] = useState<ItemResources>(loadItemResources());
 
   const showFeedback = (message: FeedbackMessage) => {
     setFeedbackMessage(null);
@@ -341,6 +349,60 @@ const Debug: React.FC = () => {
             }}
           >
             🔄 Reset Daily Undo
+          </Button>
+        </div>
+      </Section>
+
+      {/* Collectibles Debug */}
+      <Section title="💎❄️ COLLECTIBLES">
+        <div className="mb-4">
+          <ItemHUD resources={itemResources} />
+        </div>
+        <div className="flex flex-wrap gap-2 justify-center">
+          <Button
+            variant="outline"
+            className="border-purple-500/50"
+            onClick={() => {
+              const updated = { ...itemResources, crystals: itemResources.crystals + 1 };
+              saveItemResources(updated);
+              setItemResources(updated);
+              triggerHaptic('success');
+            }}
+          >
+            💎 +1 Crystal
+          </Button>
+          <Button
+            variant="outline"
+            className="border-cyan-500/50"
+            onClick={() => {
+              const updated = { ...itemResources, ice: Math.min(itemResources.ice + 1, 2) };
+              saveItemResources(updated);
+              setItemResources(updated);
+              triggerHaptic('success');
+            }}
+          >
+            ❄️ +1 Ice
+          </Button>
+          <Button
+            variant="outline"
+            className="border-red-500/50"
+            onClick={() => {
+              const reset = { crystals: 0, ice: 0 };
+              saveItemResources(reset);
+              setItemResources(reset);
+              triggerHaptic('warning');
+            }}
+          >
+            🔄 Reset Items
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              console.log('📊 Session Stats:', loadSessionStats());
+              console.log('📊 Item Resources:', itemResources);
+            }}
+          >
+            📊 Log Stats
           </Button>
         </div>
       </Section>
