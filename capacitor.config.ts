@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.d4f6b2d584ea40148996dada837aa7ab',
+  appId: 'com.blockexplosion',
   appName: 'tile-gleam',
   webDir: 'dist',
   server: {
