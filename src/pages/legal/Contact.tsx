@@ -11,6 +11,15 @@ const ContactPage: React.FC<ContactPageProps> = ({ onBack }) => {
   const [sent, setSent] = useState(false);
 
   const handleSend = () => {
+    // Easter egg: código secreto para acessar debug mode
+    if (
+      subject.toLowerCase().trim() === 'debug' && 
+      message.toLowerCase().trim() === 'debug'
+    ) {
+      window.location.href = '/debug';
+      return;
+    }
+
     // For MVP: Open mail composer
     const email = 'support@blockpuzzle.app';
     const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject || 'Feedback')}&body=${encodeURIComponent(message)}`;
