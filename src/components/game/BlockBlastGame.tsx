@@ -235,13 +235,22 @@ const BlockBlastGame: React.FC = () => {
   useEffect(() => {
     const forcedItem = localStorage.getItem('debug_force_spawn_item');
     if (forcedItem && (forcedItem === 'crystal' || forcedItem === 'ice')) {
+      // Colocar o item no itemGrid
       setItemGrid(prev => {
         const newGrid = prev.map(row => [...row]);
         newGrid[3][3] = forcedItem as 'crystal' | 'ice';
         return newGrid;
       });
+      
+      // TAMBÉM colocar um bloco no gameState.grid para o item ser visível
+      setGameState(prev => {
+        const newGrid = prev.grid.map(row => [...row]);
+        newGrid[3][3] = 1; // Cor 1 (azul) para ser visível
+        return { ...prev, grid: newGrid };
+      });
+      
       localStorage.removeItem('debug_force_spawn_item');
-      console.log(`[Debug] Forced ${forcedItem} spawn at (3,3)`);
+      console.log(`[Debug] Forced ${forcedItem} spawn at (3,3) with block`);
     }
   }, []);
   
