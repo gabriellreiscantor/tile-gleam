@@ -8,6 +8,8 @@ type GameHUDProps = {
   combo?: number;
   itemResources?: ItemResources;
   onOpenSettings: () => void;
+  onActivateStar?: () => void;
+  starDisabled?: boolean;
 };
 
 // Compact pill for items
@@ -24,7 +26,11 @@ const GameHUD: React.FC<GameHUDProps> = ({
   combo = 0,
   itemResources,
   onOpenSettings,
+  onActivateStar,
+  starDisabled = false,
 }) => {
+  const hasStars = itemResources && itemResources.stars > 0;
+  
   return (
     <div
       className="fixed top-0 left-0 right-0 z-50 pointer-events-auto select-none"
@@ -81,7 +87,35 @@ const GameHUD: React.FC<GameHUDProps> = ({
         {itemResources && (
           <div className="absolute right-0 top-[56px] flex flex-col gap-1 items-end">
             <HUDPill icon="💎" value={itemResources.crystals} />
-            <HUDPill icon="❄️" value={itemResources.ice} />
+            
+            {/* STAR BUTTON - Interactive when has stars */}
+            {onActivateStar ? (
+              <button
+                type="button"
+                onClick={onActivateStar}
+                disabled={starDisabled || !hasStars}
+                className={cn(
+                  "flex items-center gap-1 px-2 py-1 rounded-xl",
+                  "transition-all duration-200",
+                  hasStars && !starDisabled
+                    ? "bg-yellow-500/20 border border-yellow-500/50 active:scale-95 hover:bg-yellow-500/30"
+                    : "bg-white/10 backdrop-blur-sm opacity-50 cursor-not-allowed"
+                )}
+              >
+                <span className={cn(
+                  "text-sm leading-none",
+                  hasStars && !starDisabled && "animate-pulse"
+                )}>⭐</span>
+                <span className={cn(
+                  "text-sm font-semibold",
+                  hasStars && !starDisabled ? "text-yellow-300" : "text-white"
+                )}>
+                  {itemResources.stars}
+                </span>
+              </button>
+            ) : (
+              <HUDPill icon="⭐" value={itemResources.stars} />
+            )}
           </div>
         )}
       </div>

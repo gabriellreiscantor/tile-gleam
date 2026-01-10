@@ -1,16 +1,14 @@
-// collectibles.ts - STRICT Collectible items system (Crystal, Ice)
-// MASTER RULE: Items reduce frustration, NOT replace skill
+// ========================================
+// COLLECTIBLES SYSTEM
+// Manages Crystal (💎) and Star (⭐) spawning, collection, and usage
+// ========================================
 
-export type ItemType = 'crystal' | 'ice';
+export type ItemType = 'crystal' | 'star';
 
-// EXTREMELY RARE base chances per ELIGIBLE event
-const BASE_CHANCES: Record<ItemType, number> = {
-  crystal: 0.004, // 0.4% - 1 per ~250 eligible events
-  ice: 0.002,     // 0.2% - 1 per ~500 eligible events
-};
-
-// Item grid - tracks which cells have items
-export type ItemGrid = (ItemType | null)[][];
+export interface ItemResources {
+  crystals: number;
+  stars: number;
+}
 
 export interface CollectedItem {
   type: ItemType;
@@ -23,42 +21,51 @@ export interface CollectionResult {
   newItemGrid: ItemGrid;
 }
 
-export interface ItemResources {
-  crystals: number;
-  ice: number;
+export type ItemGrid = (ItemType | null)[][];
+
+// Emoji mapping for visual display
+export const ITEM_EMOJI: Record<ItemType, string> = {
+  crystal: '💎',
+  star: '⭐',
+};
+
+// ========================================
+// SESSION STATS - Track per-game and across sessions
+// ========================================
+
+export interface ItemSessionStats {
+  crystalsThisGame: number;
+  starsThisGame: number;
+  currentGameNumber: number;
+  lastStarGameNumber: number; // Last game where star dropped
+  gamesSinceLastStar: number; // Counter for 15-game cooldown
+  crystalsCollectedLast10Games: number;
+  hasEverCollectedCrystal: boolean;
 }
 
-// Session tracking for drop limits
-export interface ItemSessionStats {
-  crystalsCollectedLast10Games: number;
-  lastFreezeGameNumber: number;
-  currentGameNumber: number;
-  crystalsThisGame: number;
-  iceThisGame: number;
-  hasEverCollectedCrystal: boolean; // For guaranteed first crystal
-}
+const INITIAL_SESSION_STATS: ItemSessionStats = {
+  crystalsThisGame: 0,
+  starsThisGame: 0,
+  currentGameNumber: 1,
+  lastStarGameNumber: 0,
+  gamesSinceLastStar: 999, // High initial value so first star can drop
+  crystalsCollectedLast10Games: 0,
+  hasEverCollectedCrystal: false,
+};
 
 const SESSION_STATS_KEY = 'blockblast_item_session';
 
-// ========== SESSION TRACKING ==========
-
 export function loadSessionStats(): ItemSessionStats {
   try {
-    const saved = localStorage.getItem(SESSION_STATS_KEY);
-    if (saved) {
-      return JSON.parse(saved);
+    const data = localStorage.getItem(SESSION_STATS_KEY);
+    if (data) {
+      const parsed = JSON.parse(data);
+      return { ...INITIAL_SESSION_STATS, ...parsed };
     }
   } catch (e) {
     console.error('Failed to load session stats:', e);
   }
-  return {
-    crystalsCollectedLast10Games: 0,
-    lastFreezeGameNumber: -999,
-    currentGameNumber: 0,
-    crystalsThisGame: 0,
-    iceThisGame: 0,
-    hasEverCollectedCrystal: false,
-  };
+  return INITIAL_SESSION_STATS;
 }
 
 export function saveSessionStats(stats: ItemSessionStats): void {
@@ -69,33 +76,38 @@ export function saveSessionStats(stats: ItemSessionStats): void {
   }
 }
 
+// Called when a new game starts
 export function startNewGame(stats: ItemSessionStats): ItemSessionStats {
   return {
     ...stats,
-    currentGameNumber: stats.currentGameNumber + 1,
     crystalsThisGame: 0,
-    iceThisGame: 0,
+    starsThisGame: 0,
+    currentGameNumber: stats.currentGameNumber + 1,
+    gamesSinceLastStar: stats.gamesSinceLastStar + 1,
   };
 }
 
+// Called when crystal is collected
 export function recordCrystalCollected(stats: ItemSessionStats): ItemSessionStats {
   return {
     ...stats,
-    crystalsCollectedLast10Games: Math.min(stats.crystalsCollectedLast10Games + 1, 10),
     crystalsThisGame: stats.crystalsThisGame + 1,
+    crystalsCollectedLast10Games: Math.min(stats.crystalsCollectedLast10Games + 1, 10),
     hasEverCollectedCrystal: true,
   };
 }
 
-export function recordIceCollected(stats: ItemSessionStats): ItemSessionStats {
+// Called when star is collected
+export function recordStarCollected(stats: ItemSessionStats): ItemSessionStats {
   return {
     ...stats,
-    lastFreezeGameNumber: stats.currentGameNumber,
-    iceThisGame: stats.iceThisGame + 1,
+    starsThisGame: stats.starsThisGame + 1,
+    lastStarGameNumber: stats.currentGameNumber,
+    gamesSinceLastStar: 0, // Reset cooldown
   };
 }
 
-// Decay crystal count every 10 games
+// Decay function - reset per-game stats when appropriate
 export function decaySessionStats(stats: ItemSessionStats): ItemSessionStats {
   if (stats.currentGameNumber % 10 === 0 && stats.crystalsCollectedLast10Games > 0) {
     return {
@@ -106,7 +118,11 @@ export function decaySessionStats(stats: ItemSessionStats): ItemSessionStats {
   return stats;
 }
 
-// ========== GRID MANAGEMENT ==========
+// ========================================
+// ITEM GRID MANAGEMENT
+// ========================================
+
+const GRID_SIZE = 8;
 
 export function createEmptyItemGrid(size: number = 8): ItemGrid {
   return Array.from({ length: size }, () => Array(size).fill(null));
@@ -126,18 +142,26 @@ function countActiveItems(grid: ItemGrid, type?: ItemType): number {
   return count;
 }
 
-// ========== ELIGIBILITY CHECKS (STRICT) ==========
+// ========================================
+// SPAWN ELIGIBILITY
+// ========================================
 
 interface SpawnContext {
   score: number;
   combo: number;
-  linesCleared: number;        // Lines cleared THIS action
-  gridOccupancy: number;       // 0-1
+  linesCleared: number;
+  gridOccupancy: number; // 0-1
   sessionStats: ItemSessionStats;
-  lifetimeGames: number;       // Total games played for guaranteed first crystal
+  lifetimeGames: number;
   lastPlacedX?: number;
   lastPlacedY?: number;
 }
+
+// Base spawn chances
+const BASE_CHANCES: Record<ItemType, number> = {
+  crystal: 0.004,  // 0.4%
+  star: 0.0015,    // 0.15% - VERY RARE
+};
 
 function isEdgeCell(x: number, y: number, gridSize: number = 8): boolean {
   return x === 0 || y === 0 || x === gridSize - 1 || y === gridSize - 1;
@@ -154,10 +178,7 @@ function isEarlyGame(score: number): boolean {
   return score < 150;
 }
 
-/**
- * 💎 CRYSTAL ELIGIBILITY - EXTREMELY STRICT
- * With GUARANTEED first crystal between games 30-50
- */
+// Crystal eligibility - moderate conditions
 function isCrystalEligible(ctx: SpawnContext): { eligible: boolean; guaranteed: boolean } {
   // Block early game completely
   if (isEarlyGame(ctx.score)) return { eligible: false, guaranteed: false };
@@ -170,14 +191,13 @@ function isCrystalEligible(ctx: SpawnContext): { eligible: boolean; guaranteed: 
   const neverCollected = !ctx.sessionStats.hasEverCollectedCrystal;
   
   if (isInGuaranteedWindow && neverCollected) {
-    // Skip normal restrictions - guaranteed to spawn!
     return { eligible: true, guaranteed: true };
   }
   
   // Normal rules: Block if already collected crystal in last 10 games
   if (ctx.sessionStats.crystalsCollectedLast10Games >= 1) return { eligible: false, guaranteed: false };
   
-  // MUST meet at least one skill condition:
+  // MUST meet at least one skill condition
   const clearedEnough = ctx.linesCleared >= 3;
   const highCombo = ctx.combo >= 4;
   const gridDanger = ctx.gridOccupancy >= 0.65;
@@ -185,33 +205,27 @@ function isCrystalEligible(ctx: SpawnContext): { eligible: boolean; guaranteed: 
   return { eligible: clearedEnough || highCombo || gridDanger, guaranteed: false };
 }
 
-/**
- * ❄️ ICE ELIGIBILITY - EVEN MORE STRICT
- */
-function isIceEligible(ctx: SpawnContext): boolean {
-  // Block early game completely
-  if (isEarlyGame(ctx.score)) return false;
+// Star eligibility - STRICT conditions for rarity
+function isStarEligible(ctx: SpawnContext): boolean {
+  // Score minimum of 500
+  if (ctx.score < 500) return false;
   
-  // Block if already got ice this game
-  if (ctx.sessionStats.iceThisGame >= 1) return false;
+  // Grid must be at least 50% occupied
+  if (ctx.gridOccupancy < 0.50) return false;
   
-  // Block if collected freeze in last 3 games
-  const gamesSinceLastFreeze = ctx.sessionStats.currentGameNumber - ctx.sessionStats.lastFreezeGameNumber;
-  if (gamesSinceLastFreeze < 3) return false;
+  // No star in last 15 games
+  if (ctx.sessionStats.gamesSinceLastStar < 15) return false;
   
-  // MUST meet ALL conditions (very strict):
-  const highCombo = ctx.combo >= 5;
-  const gridDanger = ctx.gridOccupancy >= 0.70;
+  // Max 1 star per game
+  if (ctx.sessionStats.starsThisGame >= 1) return false;
   
-  return highCombo && gridDanger;
+  return true;
 }
 
-// ========== SPAWN LOGIC (SEVERE) ==========
+// ========================================
+// SPAWNING LOGIC
+// ========================================
 
-/**
- * Try to spawn an item - STRICT FILTERS
- * Returns the item type to spawn, or null
- */
 export function trySpawnItem(
   itemGrid: ItemGrid,
   x: number,
@@ -229,59 +243,59 @@ export function trySpawnItem(
   // Max 1 item on grid at a time
   if (countActiveItems(itemGrid) >= 1) return null;
   
-  // Try Crystal first (if eligible)
-  const crystalCheck = isCrystalEligible(context);
-  if (crystalCheck.eligible) {
-    if (crystalCheck.guaranteed) {
-      // 100% spawn for guaranteed first crystal!
-      console.log('[Crystal] GUARANTEED first crystal spawned!');
-      return 'crystal';
-    }
-    const roll = Math.random();
-    if (roll < BASE_CHANCES.crystal) {
-      return 'crystal';
+  // Check debug override first
+  const debugItem = localStorage.getItem('debug_force_spawn_item');
+  if (debugItem === 'crystal' || debugItem === 'star') {
+    return debugItem as ItemType;
+  }
+  
+  // Star first (rarest) - only if eligible
+  if (isStarEligible(context)) {
+    if (Math.random() < BASE_CHANCES.star) {
+      console.log('[Items] ⭐ STAR SPAWN! Ultra rare event!');
+      return 'star';
     }
   }
   
-  // Try Ice (if eligible)
-  if (isIceEligible(context)) {
-    const roll = Math.random();
-    if (roll < BASE_CHANCES.ice) {
-      return 'ice';
+  // Crystal second
+  const crystalCheck = isCrystalEligible(context);
+  if (crystalCheck.eligible) {
+    if (crystalCheck.guaranteed) {
+      console.log('[Crystal] GUARANTEED first crystal spawned!');
+      return 'crystal';
+    }
+    if (Math.random() < BASE_CHANCES.crystal) {
+      console.log('[Items] 💎 Crystal spawn');
+      return 'crystal';
     }
   }
   
   return null;
 }
 
-/**
- * Spawn items for placed piece blocks
- * Returns updated item grid
- */
+// Called when a piece is placed
 export function spawnItemsForPiece(
   itemGrid: ItemGrid,
-  piece: number[][],
-  startX: number,
-  startY: number,
-  context: SpawnContext
+  pieceShape: number[][],
+  gridX: number,
+  gridY: number,
+  ctx: SpawnContext
 ): ItemGrid {
   const newGrid = cloneItemGrid(itemGrid);
   
-  // Already have an item this game? Block all spawns
-  if (context.sessionStats.crystalsThisGame >= 1 && context.sessionStats.iceThisGame >= 1) {
+  // Already have items this game? Block spawns
+  if (ctx.sessionStats.crystalsThisGame >= 1 && ctx.sessionStats.starsThisGame >= 1) {
     return newGrid;
   }
   
-  for (let py = 0; py < piece.length; py++) {
-    for (let px = 0; px < piece[py].length; px++) {
-      if (!piece[py][px]) continue;
-      
-      const x = startX + px;
-      const y = startY + py;
-      
-      if (y >= 0 && y < newGrid.length && x >= 0 && x < newGrid[0].length) {
-        if (newGrid[y][x] === null) {
-          const item = trySpawnItem(newGrid, x, y, context);
+  for (let py = 0; py < pieceShape.length; py++) {
+    for (let px = 0; px < pieceShape[py].length; px++) {
+      if (pieceShape[py][px] !== 0) {
+        const x = gridX + px;
+        const y = gridY + py;
+        
+        if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) {
+          const item = trySpawnItem(newGrid, x, y, ctx);
           if (item) {
             newGrid[y][x] = item;
             return newGrid; // Only 1 item per piece placement
@@ -294,38 +308,40 @@ export function spawnItemsForPiece(
   return newGrid;
 }
 
-// ========== COLLECTION LOGIC ==========
+// ========================================
+// COLLECTION
+// ========================================
 
-/**
- * Collect items from cleared rows and columns
- */
 export function collectItemsFromClears(
   itemGrid: ItemGrid,
   clearedRows: number[],
   clearedCols: number[]
 ): CollectionResult {
-  const newGrid = cloneItemGrid(itemGrid);
   const collected: CollectedItem[] = [];
+  const newGrid = cloneItemGrid(itemGrid);
   const gridSize = itemGrid.length;
   
+  // Collect from cleared rows
   for (const row of clearedRows) {
     for (let col = 0; col < gridSize; col++) {
-      const item = newGrid[row][col];
-      if (item !== null) {
+      const item = newGrid[row]?.[col];
+      if (item) {
         collected.push({ type: item, x: col, y: row });
         newGrid[row][col] = null;
       }
     }
   }
   
+  // Collect from cleared columns
   for (const col of clearedCols) {
     for (let row = 0; row < gridSize; row++) {
-      const item = newGrid[row][col];
-      if (item !== null) {
+      const item = newGrid[row]?.[col];
+      if (item) {
+        // Avoid duplicates
         if (!collected.some(c => c.x === col && c.y === row)) {
           collected.push({ type: item, x: col, y: row });
+          newGrid[row][col] = null;
         }
-        newGrid[row][col] = null;
       }
     }
   }
@@ -333,34 +349,36 @@ export function collectItemsFromClears(
   return { collected, newItemGrid: newGrid };
 }
 
-// ========== PERSISTENCE ==========
+// ========================================
+// RESOURCE PERSISTENCE
+// ========================================
 
-const ITEMS_STORAGE_KEY = 'blockblast_item_resources';
+const ITEM_RESOURCES_KEY = 'blockblast_item_resources';
+
+const INITIAL_RESOURCES: ItemResources = {
+  crystals: 0,
+  stars: 0,
+};
 
 export function loadItemResources(): ItemResources {
   try {
-    const saved = localStorage.getItem(ITEMS_STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
+    const data = localStorage.getItem(ITEM_RESOURCES_KEY);
+    if (data) {
+      const parsed = JSON.parse(data);
       return {
         crystals: parsed.crystals ?? 0,
-        ice: Math.min(parsed.ice ?? 0, 2), // Max 2 stored
+        stars: parsed.stars ?? 0,
       };
     }
   } catch (e) {
     console.error('Failed to load item resources:', e);
   }
-  return { crystals: 0, ice: 0 };
+  return INITIAL_RESOURCES;
 }
 
 export function saveItemResources(resources: ItemResources): void {
   try {
-    // Enforce max ice storage
-    const capped = {
-      ...resources,
-      ice: Math.min(resources.ice, 2),
-    };
-    localStorage.setItem(ITEMS_STORAGE_KEY, JSON.stringify(capped));
+    localStorage.setItem(ITEM_RESOURCES_KEY, JSON.stringify(resources));
   } catch (e) {
     console.error('Failed to save item resources:', e);
   }
@@ -370,23 +388,22 @@ export function addCollectedItems(
   resources: ItemResources,
   collected: CollectedItem[]
 ): ItemResources {
-  let crystals = resources.crystals;
-  let ice = resources.ice;
+  let { crystals, stars } = resources;
   
   for (const item of collected) {
     if (item.type === 'crystal') crystals++;
-    if (item.type === 'ice') ice = Math.min(ice + 1, 2); // Max 2 stored
+    if (item.type === 'star') stars++;
   }
   
-  return { crystals, ice };
+  // No cap on stars - they're already super rare
+  return { crystals, stars };
 }
 
-// ========== ECONOMY - SPENDING ==========
+// ========================================
+// CRYSTAL ECONOMY
+// ========================================
 
-// 💎 Continue costs 3 crystals
 export const CONTINUE_CRYSTAL_COST = 3;
-
-// 💎 Re-roll costs 2 crystals (max 1 per game)
 export const REROLL_CRYSTAL_COST = 2;
 
 export function canAffordCrystalContinue(resources: ItemResources): boolean {
@@ -417,25 +434,25 @@ export function spendCrystalsForReroll(resources: ItemResources): ItemResources 
   };
 }
 
-// ❄️ Freeze: preserves combo for 3 moves
-export const FREEZE_COST = 1;
-export const FREEZE_DURATION = 3;
+// ========================================
+// STAR ECONOMY
+// ========================================
 
-export function canAffordFreeze(resources: ItemResources): boolean {
-  return resources.ice >= FREEZE_COST;
+export function canUseStar(resources: ItemResources): boolean {
+  return resources.stars >= 1;
 }
 
-export function spendIceForFreeze(resources: ItemResources): ItemResources {
-  if (!canAffordFreeze(resources)) {
-    throw new Error('Not enough ice for freeze');
-  }
+export function spendStar(resources: ItemResources): ItemResources {
+  if (!canUseStar(resources)) return resources;
   return {
     ...resources,
-    ice: resources.ice - FREEZE_COST,
+    stars: resources.stars - 1,
   };
 }
 
-// ========== CONTINUE ELIGIBILITY (STRICT) ==========
+// ========================================
+// CONTINUE ELIGIBILITY (Crystal-based)
+// ========================================
 
 export interface ContinueEligibility {
   canUseCrystals: boolean;
@@ -446,24 +463,20 @@ export function checkCrystalContinueEligibility(
   resources: ItemResources,
   score: number,
   gridOccupancy: number,
-  continueUsedThisGame: boolean
+  continueUsedThisGame: boolean = false
 ): ContinueEligibility {
-  // Already used continue this game
   if (continueUsedThisGame) {
     return { canUseCrystals: false, reason: 'Continue already used' };
   }
   
-  // Score too low
   if (score < 100) {
     return { canUseCrystals: false, reason: 'Score too low' };
   }
   
-  // Grid not dangerous enough
   if (gridOccupancy < 0.60) {
     return { canUseCrystals: false, reason: 'Grid not full enough' };
   }
   
-  // Not enough crystals
   if (!canAffordCrystalContinue(resources)) {
     return { canUseCrystals: false, reason: 'Not enough crystals' };
   }
@@ -471,9 +484,60 @@ export function checkCrystalContinueEligibility(
   return { canUseCrystals: true };
 }
 
-// ========== VISUAL HELPERS ==========
+// ========================================
+// STAR CONVERGENCE HELPERS
+// ========================================
 
-export const ITEM_EMOJI: Record<ItemType, string> = {
-  crystal: '💎',
-  ice: '❄️',
-};
+// Find the most common color on the grid
+export function findDominantColor(grid: number[][]): number | null {
+  const colorCounts: Record<number, number> = {};
+  
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+      const cell = grid[y][x];
+      if (cell !== 0) {
+        colorCounts[cell] = (colorCounts[cell] || 0) + 1;
+      }
+    }
+  }
+  
+  const entries = Object.entries(colorCounts);
+  if (entries.length === 0) return null;
+  
+  // Sort by count descending
+  entries.sort((a, b) => b[1] - a[1]);
+  return Number(entries[0][0]);
+}
+
+// Get all cells of a specific color
+export function getCellsOfColor(grid: number[][], colorId: number): { x: number; y: number }[] {
+  const cells: { x: number; y: number }[] = [];
+  
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+      if (grid[y][x] === colorId) {
+        cells.push({ x, y });
+      }
+    }
+  }
+  
+  return cells;
+}
+
+// Apply star convergence to grid - clear all cells of dominant color
+export function applyStarConvergence(grid: number[][], cells: { x: number; y: number }[]): number[][] {
+  const newGrid = grid.map(row => [...row]);
+  
+  for (const cell of cells) {
+    newGrid[cell.y][cell.x] = 0;
+  }
+  
+  return newGrid;
+}
+
+// Calculate star convergence score
+export function calculateStarScore(cellCount: number): number {
+  const basePoints = cellCount * 100;
+  const multiplier = 2.5;
+  return Math.floor(basePoints * multiplier);
+}
