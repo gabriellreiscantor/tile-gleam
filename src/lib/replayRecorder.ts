@@ -1,8 +1,15 @@
-// replayRecorder.ts - Sistema de gravação e replay de partidas
+// replayRecorder.ts - Sistema de gravação e replay de partidas cinematográfico
 
-import type { Grid, Piece, EngineState } from './gameEngine';
+import type { Grid, Piece } from './gameEngine';
 
-// Evento de jogada gravado
+// Ponto de trajetória do drag
+export interface DragPoint {
+  x: number;
+  y: number;
+  t: number; // timestamp relativo ao início do drag
+}
+
+// Evento de jogada gravado com dados cinematográficos
 export interface RecordedMove {
   timestamp: number; // ms desde início da partida
   pieceId: string;
@@ -14,6 +21,13 @@ export interface RecordedMove {
   comboAfter: number;
   linesCleared: number;
   gridSnapshot: Grid; // Estado do grid APÓS a jogada
+  
+  // Dados cinematográficos
+  gridBefore: Grid; // Estado ANTES de colocar
+  dragPath: DragPoint[]; // Trajetória do drag (posições em pixels)
+  clearedRows: number[]; // Linhas que foram limpas
+  clearedCols: number[]; // Colunas que foram limpas
+  placementDuration: number; // Tempo que levou para colocar (ms)
 }
 
 // Dados completos do replay
@@ -51,7 +65,7 @@ export function startRecording(state: RecorderState): RecorderState {
   };
 }
 
-// Gravar uma jogada
+// Gravar uma jogada com dados cinematográficos
 export function recordMove(
   state: RecorderState,
   move: Omit<RecordedMove, 'timestamp'>
@@ -61,8 +75,13 @@ export function recordMove(
   const recordedMove: RecordedMove = {
     ...move,
     timestamp: Date.now() - state.startTime,
-    // Clone do grid para evitar mutações
+    // Clone dos grids para evitar mutações
     gridSnapshot: move.gridSnapshot.map(row => [...row]),
+    gridBefore: move.gridBefore.map(row => [...row]),
+    // Clone do drag path
+    dragPath: move.dragPath.map(p => ({ ...p })),
+    clearedRows: [...move.clearedRows],
+    clearedCols: [...move.clearedCols],
   };
   
   return {

@@ -79,6 +79,7 @@ import { preloadSounds, sounds, playBGM, stopBGM, setBGMEnabled, unlockAudioCont
 import {
   type ReplayData,
   type RecorderState,
+  type DragPoint,
   createRecorderState,
   startRecording,
   recordMove,
@@ -165,6 +166,10 @@ const BlockBlastGame: React.FC = () => {
   const recorderRef = useRef<RecorderState>(startRecording(createRecorderState()));
   const [currentReplay, setCurrentReplay] = useState<ReplayData | null>(null);
   const [showReplayPlayer, setShowReplayPlayer] = useState(false);
+  
+  // Drag path recording for cinematographic replay
+  const dragPathRef = useRef<DragPoint[]>([]);
+  const dragStartTimeRef = useRef<number>(0);
   
   // History for undo
   const historyRef = useRef<{ state: EngineState; pieces: (GamePiece | null)[]; itemGrid: ItemGrid }[]>([]);
@@ -313,6 +318,10 @@ const BlockBlastGame: React.FC = () => {
       setTutorial(advanceTutorial);
     }
     
+    // Start recording drag path for cinematographic replay
+    dragPathRef.current = [];
+    dragStartTimeRef.current = Date.now();
+    
     setDragState({
       piece,
       pixelX: 0,
@@ -326,6 +335,17 @@ const BlockBlastGame: React.FC = () => {
     
     const metrics = getBoardMetrics();
     if (!metrics) return;
+    
+    // Record drag point for cinematographic replay (sample every 50ms)
+    const now = Date.now();
+    const lastPoint = dragPathRef.current[dragPathRef.current.length - 1];
+    if (!lastPoint || (now - dragStartTimeRef.current - lastPoint.t) >= 50) {
+      dragPathRef.current.push({
+        x: blockX,
+        y: blockY,
+        t: now - dragStartTimeRef.current,
+      });
+    }
     
     // Update pixel position for visual tracking
     setDragState(prev => prev ? { ...prev, pixelX: blockX, pixelY: blockY } : null);
@@ -422,7 +442,7 @@ const BlockBlastGame: React.FC = () => {
       const hadClear = result.clear.linesCleared > 0;
       setLastMoveHadClear(hadClear);
       
-      // Record move for replay (skip in tutorial)
+      // Record move for replay with cinematographic data (skip in tutorial)
       if (!tutorial.isActive) {
         recorderRef.current = recordMove(recorderRef.current, {
           pieceId: piece.id,
@@ -434,6 +454,12 @@ const BlockBlastGame: React.FC = () => {
           comboAfter: result.next.combo,
           linesCleared: result.clear.linesCleared,
           gridSnapshot: result.next.grid,
+          // Cinematographic data
+          gridBefore: gameState.grid,
+          dragPath: dragPathRef.current,
+          clearedRows: result.clear.clearedRows,
+          clearedCols: result.clear.clearedCols,
+          placementDuration: Date.now() - dragStartTimeRef.current,
         });
       }
       
