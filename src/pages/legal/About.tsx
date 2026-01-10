@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, Heart } from 'lucide-react';
 import { getAppVersion } from '@/lib/playerResources';
+import appIcon from '@/assets/app-icon.png';
 
 interface AboutPageProps {
   onBack: () => void;
@@ -23,14 +24,12 @@ const AboutPage: React.FC<AboutPageProps> = ({ onBack }) => {
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-5 py-6 flex flex-col items-center text-center">
         {/* App Icon */}
-        <div 
-          className="w-24 h-24 rounded-3xl flex items-center justify-center mb-4"
-          style={{
-            background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-            boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
-          }}
-        >
-          <span className="text-5xl">🧩</span>
+        <div className="w-24 h-24 rounded-3xl overflow-hidden mb-4 shadow-lg">
+          <img 
+            src={appIcon} 
+            alt="Block Puzzle" 
+            className="w-full h-full object-cover"
+          />
         </div>
 
         {/* App Name */}
