@@ -231,6 +231,20 @@ const BlockBlastGame: React.FC = () => {
     saveSessionStats(itemSessionStats);
   }, [itemSessionStats]);
   
+  // Debug: Force spawn item from debug page
+  useEffect(() => {
+    const forcedItem = localStorage.getItem('debug_force_spawn_item');
+    if (forcedItem && (forcedItem === 'crystal' || forcedItem === 'ice')) {
+      setItemGrid(prev => {
+        const newGrid = prev.map(row => [...row]);
+        newGrid[3][3] = forcedItem as 'crystal' | 'ice';
+        return newGrid;
+      });
+      localStorage.removeItem('debug_force_spawn_item');
+      console.log(`[Debug] Forced ${forcedItem} spawn at (3,3)`);
+    }
+  }, []);
+  
   // Helper to generate pieces using RNG system
   const generatePiecesWithRng = useCallback((state: EngineState) => {
     const trio = generateTrio(

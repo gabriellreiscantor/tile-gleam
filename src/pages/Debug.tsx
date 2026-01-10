@@ -407,6 +407,35 @@ const Debug: React.FC = () => {
         </div>
       </Section>
 
+      {/* Test Items in Game */}
+      <Section title="🎮 TESTAR NO JOGO">
+        <p className="text-xs text-muted-foreground mb-3 text-center">
+          Inicia um jogo com o item aparecendo no tabuleiro (posição 3,3)
+        </p>
+        <div className="flex flex-wrap gap-2 justify-center">
+          <Button
+            variant="outline"
+            className="border-purple-500/50 bg-purple-500/10"
+            onClick={() => {
+              localStorage.setItem('debug_force_spawn_item', 'crystal');
+              window.location.href = '/';
+            }}
+          >
+            💎 Jogar com Crystal
+          </Button>
+          <Button
+            variant="outline"
+            className="border-cyan-500/50 bg-cyan-500/10"
+            onClick={() => {
+              localStorage.setItem('debug_force_spawn_item', 'ice');
+              window.location.href = '/';
+            }}
+          >
+            ❄️ Jogar com Ice
+          </Button>
+        </div>
+      </Section>
+
       {/* Continue Modal Component - Now uses GameOverModal */}
       {showContinueModal && (
         <GameOverModal
