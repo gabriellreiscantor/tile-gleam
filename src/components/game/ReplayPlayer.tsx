@@ -3,6 +3,7 @@ import { Play, Pause, RotateCcw, X, FastForward, Rewind, SkipBack } from 'lucide
 import { cn } from '@/lib/utils';
 import GameBoard from './GameBoard';
 import AnimatedReplayPiece from './AnimatedReplayPiece';
+import { BANNER_HEIGHT } from './BannerAd';
 import {
   type ReplayData,
   type RecordedMove,
@@ -11,7 +12,6 @@ import {
 } from '@/lib/replayRecorder';
 import { createEmptyGrid, GRID_SIZE } from '@/lib/gameEngine';
 import { createEmptyItemGrid } from '@/lib/collectibles';
-
 interface ReplayPlayerProps {
   replay: ReplayData;
   onClose: () => void;
@@ -310,6 +310,9 @@ const ReplayPlayer: React.FC<ReplayPlayerProps> = ({ replay, onClose, onRestart 
   
   // Calcula posição da peça animada
   const renderAnimatedPiece = () => {
+    // Não mostrar peça se está parado no início (evita bloquear controles)
+    if (!isPlaying && currentTime === 0) return null;
+    
     if (!currentMove || moveAnimation.phase !== 'drag') return null;
     
     const metrics = getBoardMetrics();
@@ -481,7 +484,7 @@ const ReplayPlayer: React.FC<ReplayPlayerProps> = ({ replay, onClose, onRestart 
       {/* Controls */}
       <div 
         className="flex items-center justify-center gap-4 py-4 px-6"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}
+        style={{ paddingBottom: `calc(env(safe-area-inset-bottom) + ${BANNER_HEIGHT + 16}px)` }}
       >
         {/* Reset */}
         <button
