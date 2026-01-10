@@ -70,6 +70,7 @@ import {
   getCellsOfColor,
   applyStarConvergence,
   calculateStarScore,
+  getAllOccupiedCells,
   spendStar,
   canUseStar,
   loadSessionStats,
@@ -1026,11 +1027,12 @@ const BlockBlastGame: React.FC = () => {
             onActivateStar={() => {
               if (!canUseStar(itemResources) || isStarActive) return;
               
-              const dominantColor = findDominantColor(gameState.grid);
-              if (!dominantColor) return;
+              // FULL BOARD CLEAR - get ALL occupied cells
+              const affectedCells = getAllOccupiedCells(gameState.grid);
+              if (affectedCells.length === 0) return; // Grid empty, nothing to clear
               
-              const affectedCells = getCellsOfColor(gameState.grid, dominantColor);
-              if (affectedCells.length === 0) return;
+              // Dominant color used only for animation visual
+              const dominantColor = findDominantColor(gameState.grid) || 1;
               
               const totalPoints = calculateStarScore(affectedCells.length);
               

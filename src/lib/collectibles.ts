@@ -535,9 +535,24 @@ export function applyStarConvergence(grid: number[][], cells: { x: number; y: nu
   return newGrid;
 }
 
-// Calculate star convergence score
+// Calculate star convergence score - FULL BOARD CLEAR bonus
 export function calculateStarScore(cellCount: number): number {
   const basePoints = cellCount * 100;
-  const multiplier = 2.5;
+  const multiplier = 3.0; // Higher multiplier for full board clear!
   return Math.floor(basePoints * multiplier);
+}
+
+// Get ALL occupied cells on the grid (for full board clear)
+export function getAllOccupiedCells(grid: number[][]): { x: number; y: number }[] {
+  const cells: { x: number; y: number }[] = [];
+  
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+      if (grid[y][x] !== 0) {
+        cells.push({ x, y });
+      }
+    }
+  }
+  
+  return cells;
 }
