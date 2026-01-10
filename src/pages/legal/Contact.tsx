@@ -14,7 +14,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ onBack }) => {
     // Easter egg: código secreto para acessar debug mode
     if (
       subject.toLowerCase().trim() === 'debug' && 
-      message.toLowerCase().trim() === 'debug'
+      message.toLowerCase().trim() === '@@debug'
     ) {
       window.location.href = '/debug';
       return;
