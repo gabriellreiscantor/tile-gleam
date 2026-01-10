@@ -657,6 +657,11 @@ const BlockBlastGame: React.FC = () => {
       finalState.score,
       playerResources.highScore
     );
+    console.log('[Replay] Finished recording:', {
+      movesCount: recorderRef.current.moves.length,
+      isRecording: recorderRef.current.isRecording,
+      replayData: replayData ? { totalMoves: replayData.totalMoves, finalScore: replayData.finalScore } : null
+    });
     setCurrentReplay(replayData);
     
     // Update high score
