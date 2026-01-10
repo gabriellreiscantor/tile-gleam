@@ -41,7 +41,7 @@ const UndoButton: React.FC<UndoButtonProps> = ({
       disabled={!isClickable}
       className={cn(
         "relative flex items-center justify-center",
-        "w-14 h-14 rounded-2xl overflow-hidden",
+        "w-14 h-14 rounded-2xl",
         "transition-all duration-200",
         // Only show gradient bg when disabled (no icon)
         !showFullIcon && "bg-white/10 opacity-40",
