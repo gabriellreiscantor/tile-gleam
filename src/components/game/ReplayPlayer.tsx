@@ -20,10 +20,10 @@ interface ReplayPlayerProps {
 
 const PLAYBACK_SPEEDS = [1, 2, 4];
 
-// Duração de cada fase de animação (ms)
-const DRAG_DURATION = 600;
-const DROP_DURATION = 150;
-const CLEAR_DURATION = 400;
+// Duração de cada fase de animação (ms) - valores calibrados para ritmo natural
+const DRAG_DURATION = 1200;  // 1.2s para arrastar a peça
+const DROP_DURATION = 200;   // 0.2s para o "pouso"
+const CLEAR_DURATION = 600;  // 0.6s para animação de clear
 
 type AnimationPhase = 'idle' | 'drag' | 'drop' | 'clear';
 
