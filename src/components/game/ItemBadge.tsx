@@ -14,9 +14,9 @@ const ItemBadge: React.FC<ItemBadgeProps> = ({ itemType, className }) => {
   return (
     <div 
       className={cn(
-        "absolute -top-1 -right-1 z-10",
-        "w-4 h-4 flex items-center justify-center",
-        "text-[10px] leading-none",
+        "absolute inset-0 z-10",
+        "flex items-center justify-center",
+        "text-2xl leading-none",
         "animate-pulse",
         className
       )}
