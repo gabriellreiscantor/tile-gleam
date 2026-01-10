@@ -1038,15 +1038,12 @@ const BlockBlastGame: React.FC = () => {
               setStarAnimationData({ dominantColor, affectedCells, totalPoints });
               setIsStarActive(true);
               
-              sounds.levelup(playerResources.soundEnabled);
+              sounds.levelUp(playerResources.soundEnabled);
               triggerHaptic('heavy');
             }}
             starDisabled={isStarActive}
           />
-          itemResources={itemResources}
-          onOpenSettings={() => setShowSettingsModal(true)}
-        />
-      )}
+        )}
 
       {/* Main game container */}
       <div 
