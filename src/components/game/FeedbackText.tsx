@@ -56,6 +56,13 @@ const FeedbackText: React.FC<FeedbackTextProps> = ({ message, messageKey, onComp
     green: 'text-green-400',
   };
 
+  // Dynamic scaling for epic moments
+  const scaleClass = message.intensity === 'epic' ? 'feedback-scale-epic' : 
+                     message.intensity === 'high' ? 'feedback-scale-high' : '';
+  
+  // Glow pulse for epic
+  const glowClass = message.intensity === 'epic' ? 'feedback-glow-epic' : '';
+
   return (
     <div
       className={cn(
@@ -63,7 +70,9 @@ const FeedbackText: React.FC<FeedbackTextProps> = ({ message, messageKey, onComp
         'font-black tracking-tight flex items-center gap-3',
         sizeClasses[message.intensity],
         colorClasses[message.color as keyof typeof colorClasses] || 'text-white',
-        animating ? 'animate-feedback-in' : 'animate-feedback-out'
+        animating ? 'animate-feedback-in' : 'animate-feedback-out',
+        scaleClass,
+        glowClass
       )}
       style={{
         textShadow: message.color === 'rainbow'
