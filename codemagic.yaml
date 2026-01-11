@@ -30,6 +30,11 @@ workflows:
           mkdir -p resources
           cp src/assets/app-icon.png resources/icon.png
           npx capacitor-assets generate --ios
+      - name: Copy audio files to iOS
+        script: |
+          mkdir -p ios/App/App/sounds
+          cp public/assets/sounds/*.mp3 ios/App/App/sounds/
+          echo "Audio files copied to iOS project"
       - name: Sync Capacitor
         script: |
           npx cap sync ios

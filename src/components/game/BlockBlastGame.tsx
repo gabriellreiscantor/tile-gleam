@@ -346,8 +346,20 @@ const BlockBlastGame: React.FC = () => {
       .filter((p): p is GamePiece => p !== null)
       .map(p => p.shape);
     
-    if (availablePieces.length === 0) return false;
-    return !anyMoveAvailable(state.grid, availablePieces);
+    if (availablePieces.length === 0) {
+      console.log('[GameOver] No pieces available, NOT game over');
+      return false;
+    }
+    
+    const canMove = anyMoveAvailable(state.grid, availablePieces);
+    console.log('[GameOver] Check:', {
+      piecesCount: availablePieces.length,
+      pieceIds: currentPieces.filter((p): p is GamePiece => p !== null).map(p => p.id),
+      canMove,
+      gridOccupancy: getGridOccupancy(state.grid)
+    });
+    
+    return !canMove;
   }, []);
 
   // ========== DRAG HANDLERS ==========
@@ -1054,7 +1066,7 @@ const BlockBlastGame: React.FC = () => {
           screenShake && "screen-shake"
         )}
         style={{
-          paddingTop: 'max(calc(env(safe-area-inset-top) + 88px), 100px)',
+          paddingTop: 'max(calc(env(safe-area-inset-top) + 100px), 120px)',
           paddingBottom: `max(calc(env(safe-area-inset-bottom) + ${BANNER_HEIGHT}px), ${BANNER_HEIGHT + 16}px)`,
           paddingLeft: 'max(env(safe-area-inset-left), 12px)',
           paddingRight: 'max(env(safe-area-inset-right), 12px)',
@@ -1079,7 +1091,7 @@ const BlockBlastGame: React.FC = () => {
         
         {/* Undo Button - Above piece tray, centered */}
         {!tutorial.isActive && (
-          <div className="flex-shrink-0 flex justify-center pb-6 -mt-6">
+          <div className="flex-shrink-0 flex justify-center pb-8 -mt-4">
             <UndoButton
               availability={undoAvailability}
               onUndo={handleUndo}
