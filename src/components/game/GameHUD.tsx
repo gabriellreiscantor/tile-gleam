@@ -11,6 +11,7 @@ type GameHUDProps = {
   onOpenSettings: () => void;
   onActivateStar?: () => void;
   starDisabled?: boolean;
+  starButtonRef?: React.RefObject<HTMLButtonElement>;
 };
 
 // Compact pill for items
@@ -38,6 +39,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
   onOpenSettings,
   onActivateStar,
   starDisabled = false,
+  starButtonRef,
 }) => {
   const hasStars = itemResources && itemResources.stars > 0;
   const comboLevel = combo > 1 ? getComboLevel(combo) : null;
@@ -107,6 +109,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
             {/* STAR BUTTON - Interactive when has stars */}
             {onActivateStar ? (
               <button
+                ref={starButtonRef}
                 type="button"
                 onClick={onActivateStar}
                 disabled={starDisabled || !hasStars}

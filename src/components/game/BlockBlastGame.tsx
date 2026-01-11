@@ -14,6 +14,7 @@ import CollectAnimation from './CollectAnimation';
 import BannerAd, { BANNER_HEIGHT } from './BannerAd';
 import UndoPurchaseModal from './UndoPurchaseModal';
 import ReplayPlayer from './ReplayPlayer';
+import StarTutorialOverlay from './StarTutorialOverlay';
 import {
   createInitialState,
   createEmptyGrid,
@@ -95,6 +96,16 @@ import {
 } from '@/lib/replayRecorder';
 import { checkColorOverload, calculateOverloadScore, clearAllCells } from '@/lib/colorOverload';
 import ColorOverloadAnimation from './ColorOverloadAnimation';
+import {
+  createStarTutorialState,
+  advanceStarTutorial,
+  shouldTriggerStarTutorial,
+  recordGameStartTime,
+  getSecondsSinceGameStart,
+  clearGameStartTime,
+  type StarTutorialState,
+} from '@/lib/starTutorial';
+
 // Convert RNG piece to GamePiece format
 interface GamePiece {
   shape: number[][];
@@ -187,6 +198,11 @@ const BlockBlastGame: React.FC = () => {
     cellCount: number;
     totalPoints: number;
   } | null>(null);
+  
+  // Star Tutorial state
+  const [starTutorial, setStarTutorial] = useState<StarTutorialState>(createStarTutorialState);
+  const starButtonRef = useRef<HTMLButtonElement>(null);
+  
   // ========== REPLAY STATE ==========
   const recorderRef = useRef<RecorderState>(startRecording(createRecorderState()));
   const [currentReplay, setCurrentReplay] = useState<ReplayData | null>(null);
@@ -255,6 +271,33 @@ const BlockBlastGame: React.FC = () => {
   useEffect(() => {
     saveSessionStats(itemSessionStats);
   }, [itemSessionStats]);
+  
+  // Star Tutorial: Track game start time and check for trigger
+  useEffect(() => {
+    if (!starTutorial.isActive || starTutorial.step !== 'waiting') return;
+    if (tutorial.isActive) return; // Wait for main tutorial to finish first
+    
+    recordGameStartTime();
+    
+    const checkTimer = setInterval(() => {
+      const seconds = getSecondsSinceGameStart();
+      
+      if (shouldTriggerStarTutorial(starTutorial, seconds)) {
+        // Give the user a star for the tutorial
+        setItemResources(prev => ({ ...prev, stars: prev.stars + 1 }));
+        
+        // Advance to show-arrow step (skip spawn/collect since we just gave them a star)
+        setStarTutorial(prev => ({ ...prev, step: 'show-arrow' }));
+        
+        sounds.success(playerResources.soundEnabled);
+        triggerHaptic('medium');
+        
+        clearInterval(checkTimer);
+      }
+    }, 1000);
+    
+    return () => clearInterval(checkTimer);
+  }, [starTutorial.isActive, starTutorial.step, tutorial.isActive, playerResources.soundEnabled]);
   
   // Debug: Force spawn item from debug page
   useEffect(() => {
@@ -1071,6 +1114,12 @@ const BlockBlastGame: React.FC = () => {
         />
       )}
       
+      {/* Star Tutorial overlay */}
+      <StarTutorialOverlay
+        state={starTutorial}
+        starButtonRef={starButtonRef}
+      />
+      
       {/* Fixed HUD - TRUE OVERLAY, outside layout flow */}
       {/* Hide when game over or continue modal is showing */}
         {!isGameOver && !showContinueModal && (
@@ -1082,6 +1131,11 @@ const BlockBlastGame: React.FC = () => {
             onOpenSettings={() => setShowSettingsModal(true)}
             onActivateStar={() => {
               if (!canUseStar(itemResources) || isStarActive) return;
+              
+              // Complete star tutorial when user clicks the star
+              if (starTutorial.isActive && starTutorial.step === 'show-arrow') {
+                setStarTutorial(advanceStarTutorial);
+              }
               
               // FULL BOARD CLEAR - get ALL occupied cells
               const affectedCells = getAllOccupiedCells(gameState.grid);
@@ -1099,7 +1153,8 @@ const BlockBlastGame: React.FC = () => {
               sounds.levelUp(playerResources.soundEnabled);
               triggerHaptic('heavy');
             }}
-            starDisabled={isStarActive}
+            starDisabled={isStarActive || (starTutorial.isActive && starTutorial.step !== 'show-arrow')}
+            starButtonRef={starButtonRef}
           />
         )}
 
