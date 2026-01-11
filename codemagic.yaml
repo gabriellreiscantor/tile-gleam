@@ -22,10 +22,14 @@ workflows:
           npm run build
       - name: Add iOS platform
         script: |
-          npx cap add ios || true
+          npx cap add ios
       - name: Sync Capacitor
         script: |
           npx cap sync ios
+      - name: Verify iOS setup
+        script: |
+          ls -la ios/App/
+          test -d ios/App/App.xcworkspace && echo "Workspace exists" || exit 1
       - name: Set version
         script: |
           cd ios/App
