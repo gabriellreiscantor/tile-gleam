@@ -24,6 +24,12 @@ workflows:
       - name: Add iOS platform
         script: |
           npx cap add ios
+      - name: Generate app icons
+        script: |
+          npm install -g @capacitor/assets
+          mkdir -p resources
+          cp src/assets/app-icon.png resources/icon.png
+          npx capacitor-assets generate --ios
       - name: Sync Capacitor
         script: |
           npx cap sync ios
