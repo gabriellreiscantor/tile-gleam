@@ -6,6 +6,7 @@ import FeedbackText from '@/components/game/FeedbackText';
 import ParticleEffect from '@/components/game/ParticleEffect';
 import AnimatedScore from '@/components/game/AnimatedScore';
 import GameOverModal from '@/components/game/GameOverModal';
+import ColorOverloadAnimation from '@/components/game/ColorOverloadAnimation';
 import {
   getClearMessage,
   getComboMessage,
@@ -31,6 +32,7 @@ import {
 } from '@/lib/collectibles';
 import { resetTutorial } from '@/lib/tutorial';
 import { resetStarTutorial, clearGameStartTime } from '@/lib/starTutorial';
+
 const Debug: React.FC = () => {
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
   const [particleTrigger, setParticleTrigger] = useState<{ x: number; y: number; color: string } | null>(null);
@@ -41,6 +43,14 @@ const Debug: React.FC = () => {
   const [gameOverIsRecord, setGameOverIsRecord] = useState(false);
   const [continueState, setContinueState] = useState<'free' | 'ad' | 'paid-only'>('free');
   const [itemResources, setItemResources] = useState<ItemResources>(loadItemResources());
+  
+  // Color Overload test state
+  const [showColorOverload, setShowColorOverload] = useState(false);
+  const [colorOverloadTestData, setColorOverloadTestData] = useState<{
+    dominantColor: number;
+    cellCount: number;
+    totalPoints: number;
+  } | null>(null);
 
   const showFeedback = (message: FeedbackMessage) => {
     setFeedbackMessage(null);
@@ -455,6 +465,70 @@ const Debug: React.FC = () => {
         </div>
       </Section>
 
+      {/* Color Overload Debug */}
+      <Section title="🌟 COLOR OVERLOAD">
+        <p className="text-xs text-muted-foreground mb-3 text-center max-w-xs">
+          Testa a mecânica de Color Overload (8+ blocos conectados ou 60% dominância)
+        </p>
+        <div className="flex flex-wrap gap-2 justify-center mb-4">
+          <Button
+            variant="outline"
+            className="border-orange-500/50 bg-orange-500/10"
+            onClick={() => {
+              setColorOverloadTestData({
+                dominantColor: 1, // Blue
+                cellCount: 12,
+                totalPoints: 680,
+              });
+              setShowColorOverload(true);
+              triggerHaptic('heavy');
+            }}
+          >
+            🎬 Ver Animação (Blue)
+          </Button>
+          <Button
+            variant="outline"
+            className="border-red-500/50 bg-red-500/10"
+            onClick={() => {
+              setColorOverloadTestData({
+                dominantColor: 2, // Red
+                cellCount: 20,
+                totalPoints: 1250,
+              });
+              setShowColorOverload(true);
+              triggerHaptic('heavy');
+            }}
+          >
+            🎬 Ver Animação (Red)
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3 text-center max-w-xs">
+          Inicia um jogo com grid pré-montado pronto para triggar Color Overload
+        </p>
+        <div className="flex flex-wrap gap-2 justify-center">
+          <Button
+            variant="outline"
+            className="border-cyan-500/50 bg-cyan-500/10"
+            onClick={() => {
+              localStorage.setItem('debug_force_color_overload', '8-connected');
+              window.location.href = '/';
+            }}
+          >
+            🔗 8 Conectados (Blue)
+          </Button>
+          <Button
+            variant="outline"
+            className="border-pink-500/50 bg-pink-500/10"
+            onClick={() => {
+              localStorage.setItem('debug_force_color_overload', '60-percent');
+              window.location.href = '/';
+            }}
+          >
+            📊 60% Dominância
+          </Button>
+        </div>
+      </Section>
+
       {/* Tutorial Debug */}
       <Section title="📚 TUTORIAL">
         <p className="text-xs text-muted-foreground mb-3 text-center max-w-xs">
@@ -548,6 +622,20 @@ const Debug: React.FC = () => {
           onRestart={() => {
             setShowGameOverModal(false);
             showFeedback({ text: 'NEW GAME!', emoji: '🎮', intensity: 'medium', color: 'cyan' });
+          }}
+        />
+      )}
+
+      {/* Color Overload Animation Test */}
+      {showColorOverload && colorOverloadTestData && (
+        <ColorOverloadAnimation
+          isActive={showColorOverload}
+          dominantColor={colorOverloadTestData.dominantColor}
+          cellCount={colorOverloadTestData.cellCount}
+          totalPoints={colorOverloadTestData.totalPoints}
+          onComplete={() => {
+            setShowColorOverload(false);
+            setColorOverloadTestData(null);
           }}
         />
       )}

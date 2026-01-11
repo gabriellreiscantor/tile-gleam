@@ -322,6 +322,52 @@ const BlockBlastGame: React.FC = () => {
     }
   }, []);
   
+  // Debug: Force Color Overload scenario from debug page
+  useEffect(() => {
+    const forcedOverload = localStorage.getItem('debug_force_color_overload');
+    if (!forcedOverload) return;
+    
+    if (forcedOverload === '8-connected') {
+      // Create a grid with 7 connected blue blocks - player needs to add 1 more
+      // Layout:
+      //   0 1 2 3 4
+      // 0 . . . . .
+      // 1 . B B B .
+      // 2 . B B B .
+      // 3 . B . . .
+      // 4 . . . . .
+      setGameState(prev => {
+        const newGrid = prev.grid.map(row => [...row]);
+        // 7 connected blue blocks (color 1)
+        newGrid[1][1] = 1; newGrid[1][2] = 1; newGrid[1][3] = 1;
+        newGrid[2][1] = 1; newGrid[2][2] = 1; newGrid[2][3] = 1;
+        newGrid[3][1] = 1;
+        return { ...prev, grid: newGrid };
+      });
+      console.log('[Debug] Forced 8-connected Color Overload scenario (need +1 blue block)');
+    } else if (forcedOverload === '60-percent') {
+      // Create a grid with ~55% red blocks scattered - player needs to add more
+      // More red blocks = triggers 60% dominance
+      setGameState(prev => {
+        const newGrid = prev.grid.map(row => [...row]);
+        // Red blocks (color 2) scattered
+        newGrid[0][0] = 2; newGrid[0][2] = 2; newGrid[0][4] = 2; newGrid[0][6] = 2;
+        newGrid[1][1] = 2; newGrid[1][3] = 2; newGrid[1][5] = 2;
+        newGrid[2][0] = 2; newGrid[2][2] = 2; newGrid[2][4] = 2;
+        newGrid[3][1] = 2; newGrid[3][3] = 2; newGrid[3][5] = 2;
+        newGrid[4][0] = 2; newGrid[4][2] = 2; newGrid[4][4] = 2;
+        // Some other colors to make it ~55%
+        newGrid[5][1] = 3; newGrid[5][3] = 4; newGrid[5][5] = 5;
+        newGrid[6][0] = 3; newGrid[6][2] = 4; newGrid[6][4] = 5;
+        newGrid[7][1] = 3; newGrid[7][3] = 4;
+        return { ...prev, grid: newGrid };
+      });
+      console.log('[Debug] Forced 60% dominance Color Overload scenario (need more red)');
+    }
+    
+    localStorage.removeItem('debug_force_color_overload');
+  }, []);
+  
   // Helper to generate pieces using RNG system
   const generatePiecesWithRng = useCallback((state: EngineState) => {
     const trio = generateTrio(
