@@ -32,8 +32,17 @@ workflows:
           npx capacitor-assets generate --ios
       - name: Copy audio files to iOS
         script: |
+          # Criar diretórios para áudio
           mkdir -p ios/App/App/sounds
-          cp public/assets/sounds/*.mp3 ios/App/App/sounds/
+          mkdir -p ios/App/App/public/sounds
+          
+          # Copiar arquivos de áudio para múltiplos locais (garantir que iOS encontre)
+          cp public/assets/sounds/*.mp3 ios/App/App/sounds/ || true
+          cp public/assets/sounds/*.mp3 ios/App/App/public/sounds/ || true
+          
+          # Listar arquivos copiados para debug
+          echo "Audio files in ios/App/App/sounds:"
+          ls -la ios/App/App/sounds/ || echo "Directory not found"
           echo "Audio files copied to iOS project"
       - name: Sync Capacitor
         script: |

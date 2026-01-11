@@ -1,5 +1,6 @@
 import React from "react";
 import type { ItemResources } from "@/lib/collectibles";
+import { getComboLevel } from "@/lib/feedback";
 import { cn } from "@/lib/utils";
 
 type GameHUDProps = {
@@ -20,6 +21,15 @@ const HUDPill: React.FC<{ icon: string; value: number }> = ({ icon, value }) => 
   </div>
 );
 
+// Combo color mapping
+const COMBO_COLORS: Record<string, string> = {
+  normal: 'text-cyan-300',
+  hot: 'text-orange-400',
+  electric: 'text-yellow-300',
+  insane: 'text-pink-400',
+  godlike: 'text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-500',
+};
+
 const GameHUD: React.FC<GameHUDProps> = ({
   score,
   bestScore,
@@ -30,6 +40,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
   starDisabled = false,
 }) => {
   const hasStars = itemResources && itemResources.stars > 0;
+  const comboLevel = combo > 1 ? getComboLevel(combo) : null;
   
   return (
     <div
@@ -59,9 +70,14 @@ const GameHUD: React.FC<GameHUDProps> = ({
           <span className="text-white text-3xl font-extrabold drop-shadow-lg">
             {score}
           </span>
-          {combo > 1 && (
-            <span className="text-cyan-300 text-xs font-bold mt-0.5">
-              🔥 x{combo}
+          {combo > 1 && comboLevel && (
+            <span className={cn(
+              "text-xs font-bold mt-0.5 transition-all",
+              COMBO_COLORS[comboLevel.tier] || 'text-cyan-300',
+              comboLevel.shake && "combo-shake",
+              comboLevel.tier === 'godlike' && "combo-rainbow text-sm"
+            )}>
+              {comboLevel.prefix} x{combo} {comboLevel.emoji}
             </span>
           )}
         </div>
