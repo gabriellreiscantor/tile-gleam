@@ -218,7 +218,8 @@ function applyClearsAndScore(args: {
   const comboAfter = args.combo + linesCleared;
 
   const base = 25 * linesCleared;
-  const mult = 1 + Math.min(comboAfter, 10) * 0.12;
+  // COMBO INFINITO: Scaling suave até 20+, sem cap rígido
+  const mult = 1 + Math.min(comboAfter, 20) * 0.08 + Math.max(0, comboAfter - 20) * 0.03;
   const multiLineBonus = getMultiLineBonus(linesCleared);
   const pointsFromClear = Math.round(base * mult) + multiLineBonus;
 

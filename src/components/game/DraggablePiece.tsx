@@ -54,6 +54,11 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
     // Notify parent with the BLOCK position (not finger)
     onDrag(floatingX, floatingY);
     pieceRef.current.setPointerCapture(e.pointerId);
+    
+    // GAME FEEL: Add subtle scale and glow immediately on pick
+    if (pieceRef.current) {
+      pieceRef.current.style.transform = 'scale(1.06)';
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -73,6 +78,11 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
     setIsDragging(false);
     onDragEnd();
     pieceRef.current?.releasePointerCapture(e.pointerId);
+    
+    // Reset scale
+    if (pieceRef.current) {
+      pieceRef.current.style.transform = '';
+    }
   };
 
   if (!isAvailable) {
@@ -121,10 +131,10 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
         {pieceContent(1)}
       </div>
 
-      {/* Floating piece during drag - slightly larger */}
+      {/* Floating piece during drag - slightly larger with glow */}
       {isDragging && createPortal(
         <div
-          className="fixed pointer-events-none"
+          className="fixed pointer-events-none piece-glow"
           style={{
             left: dragPosition.x,
             top: dragPosition.y,
@@ -132,7 +142,7 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
             marginLeft: -(pieceWidthPx * 1.15) / 2,
             marginTop: -(pieceHeightPx * 1.15) / 2,
             transform: 'scale(1.15)',
-            filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.5)) brightness(1.1)',
+            filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.5)) drop-shadow(0 0 20px rgba(100,200,255,0.3)) brightness(1.1)',
             zIndex: 9999,
           }}
         >

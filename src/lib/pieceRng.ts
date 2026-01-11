@@ -24,6 +24,7 @@ export interface GameSignals {
   score: number;
   movesSinceClear: number;
   grid: Grid;
+  currentCombo?: number; // For progressive difficulty
 }
 
 export interface GeneratedPiece {
@@ -162,11 +163,15 @@ function pickFromBag(state: RngState): PieceId {
 }
 
 /** ======= WEIGHTED PICK (tier-controlled) ======= **/
-function tierWeights(difficulty01: number, danger: number, recentFailures: number): Record<Tier, number> {
+function tierWeights(difficulty01: number, danger: number, recentFailures: number, currentCombo: number = 0): Record<Tier, number> {
   const tiltHelp = clamp01(recentFailures / 4) * 0.25;
+  
+  // COMBO INFINITO: Dificuldade progressiva baseada no combo atual
+  // Quanto maior o combo, mais difícil fica (mas nunca impossível)
+  const comboFactor = clamp01(currentCombo / 25) * 0.25; // Max 25% harder at combo 25+
 
-  let easy = 0.60 - difficulty01 * 0.45 + tiltHelp;
-  let hard = 0.10 + difficulty01 * 0.45 - tiltHelp;
+  let easy = 0.60 - difficulty01 * 0.45 + tiltHelp - comboFactor * 0.20;
+  let hard = 0.10 + difficulty01 * 0.45 - tiltHelp + comboFactor * 0.15;
   let mid  = 1 - (easy + hard);
 
   const dangerHelp = danger * 0.25;
@@ -174,6 +179,7 @@ function tierWeights(difficulty01: number, danger: number, recentFailures: numbe
   easy = Math.min(0.80, easy + dangerHelp * 0.6);
   mid  = Math.max(0.10, 1 - (easy + hard));
 
+  // Normalizar
   const sum = easy + mid + hard;
   return { easy: easy/sum, mid: mid/sum, hard: hard/sum };
 }
@@ -215,9 +221,10 @@ export function generateTrio(signals: GameSignals, state: RngState): TrioResult 
   const occ = occupancy01(signals.grid);
   const baseDiff = scoreDifficulty01(signals.score);
   const dangerLevel = danger01(occ, signals.movesSinceClear);
+  const currentCombo = signals.currentCombo || 0;
 
   const difficulty01 = clamp01(baseDiff + (dangerLevel * 0.10));
-  const weights = tierWeights(difficulty01, dangerLevel, state.recentFailures);
+  const weights = tierWeights(difficulty01, dangerLevel, state.recentFailures, currentCombo);
 
   // 1) Generate 3 piece IDs by tier
   const ids: PieceId[] = [];
@@ -233,22 +240,33 @@ export function generateTrio(signals: GameSignals, state: RngState): TrioResult 
     ids.push(id);
   }
 
-  // 2) Fairness rule: at least 1 must fit
+  // 2) Fairness rule: at least 1 must fit (2 if combo > 15)
   let ensuredFit = false;
   const fits = ids.map(id => anyMoveAvailableRng(signals.grid, PIECES[id]));
-  if (!fits.some(Boolean)) {
+  const minFitsRequired = currentCombo > 15 ? 2 : 1;
+  const currentFits = fits.filter(Boolean).length;
+  
+  if (currentFits < minFitsRequired) {
     const targetTier: Tier = dangerLevel > 0.55 ? "easy" : "mid";
     const candidates = randomCandidatesByTier(targetTier);
-    const fitId = bestFittingPieceId(signals.grid, candidates);
-    if (fitId) {
-      ids[0] = fitId;
-      ensuredFit = true;
-    } else {
-      const all = Object.keys(PIECES) as PieceId[];
-      const anyFit = bestFittingPieceId(signals.grid, all);
-      if (anyFit) {
-        ids[0] = anyFit;
+    
+    // Fill slots until we have enough fits
+    for (let i = 0; i < ids.length && currentFits < minFitsRequired; i++) {
+      if (fits[i]) continue; // Already fits
+      
+      const fitId = bestFittingPieceId(signals.grid, candidates);
+      if (fitId) {
+        ids[i] = fitId;
+        fits[i] = true;
         ensuredFit = true;
+      } else {
+        const all = Object.keys(PIECES) as PieceId[];
+        const anyFit = bestFittingPieceId(signals.grid, all);
+        if (anyFit) {
+          ids[i] = anyFit;
+          fits[i] = true;
+          ensuredFit = true;
+        }
       }
     }
   }

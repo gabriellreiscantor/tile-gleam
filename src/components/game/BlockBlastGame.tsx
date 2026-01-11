@@ -93,6 +93,8 @@ import {
   recordMove,
   finishRecording,
 } from '@/lib/replayRecorder';
+import { checkColorOverload, calculateOverloadScore, clearAllCells } from '@/lib/colorOverload';
+import ColorOverloadAnimation from './ColorOverloadAnimation';
 // Convert RNG piece to GamePiece format
 interface GamePiece {
   shape: number[][];
@@ -178,6 +180,13 @@ const BlockBlastGame: React.FC = () => {
     totalPoints: number;
   } | null>(null);
   
+  // Color Overload state
+  const [colorOverloadActive, setColorOverloadActive] = useState(false);
+  const [colorOverloadData, setColorOverloadData] = useState<{
+    dominantColor: number;
+    cellCount: number;
+    totalPoints: number;
+  } | null>(null);
   // ========== REPLAY STATE ==========
   const recorderRef = useRef<RecorderState>(startRecording(createRecorderState()));
   const [currentReplay, setCurrentReplay] = useState<ReplayData | null>(null);
@@ -273,7 +282,7 @@ const BlockBlastGame: React.FC = () => {
   // Helper to generate pieces using RNG system
   const generatePiecesWithRng = useCallback((state: EngineState) => {
     const trio = generateTrio(
-      { score: state.score, movesSinceClear: state.movesSinceClear, grid: state.grid },
+      { score: state.score, movesSinceClear: state.movesSinceClear, grid: state.grid, currentCombo: state.combo },
       rngStateRef.current
     );
     console.log('[RNG Debug]', trio.debug);
@@ -964,8 +973,43 @@ const BlockBlastGame: React.FC = () => {
   // Get board metrics for collection animation
   const boardMetrics = getBoardMetrics();
 
+  // Calculate tension/danger mode based on grid occupancy
+  const gridOccupancyForTension = getGridOccupancy(gameState.grid);
+  const isTenseMode = gridOccupancyForTension > 0.65;
+  const isDangerMode = gridOccupancyForTension > 0.80;
+
   return (
     <>
+      {/* Color Overload Animation */}
+      <ColorOverloadAnimation
+        isActive={colorOverloadActive}
+        dominantColor={colorOverloadData?.dominantColor || 1}
+        cellCount={colorOverloadData?.cellCount || 0}
+        totalPoints={colorOverloadData?.totalPoints || 0}
+        onComplete={() => {
+          if (!colorOverloadData) return;
+          
+          // Clear all cells after overload explosion
+          const clearedGrid = clearAllCells(gameState.grid);
+          const newScore = gameState.score + colorOverloadData.totalPoints;
+          
+          setGameState(prev => ({
+            ...prev,
+            grid: clearedGrid,
+            score: newScore,
+            combo: prev.combo + 1,
+          }));
+          
+          // Clear item grid too
+          setItemGrid(createEmptyItemGrid());
+          
+          setColorOverloadActive(false);
+          setColorOverloadData(null);
+          
+          showFeedback({ text: 'MEGA CLEAR!', emoji: '🌟', intensity: 'epic', color: 'rainbow' });
+        }}
+      />
+      
       {/* Particle effects layer */}
       <ParticleEffect trigger={particleTrigger} count={16} />
       
@@ -1063,7 +1107,9 @@ const BlockBlastGame: React.FC = () => {
       <div 
         className={cn(
           "fixed inset-0 flex flex-col items-center overflow-hidden",
-          screenShake && "screen-shake"
+          screenShake && "screen-shake",
+          isTenseMode && !isDangerMode && "tension-mode",
+          isDangerMode && "danger-mode"
         )}
         style={{
           paddingTop: 'max(calc(env(safe-area-inset-top) + 100px), 120px)',

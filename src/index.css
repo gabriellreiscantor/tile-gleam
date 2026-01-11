@@ -629,3 +629,244 @@ html, body {
 .animate-bonus-flash {
   animation: bonus-flash 0.6s ease-out forwards;
 }
+
+/* ========== COLOR OVERLOAD ANIMATIONS ========== */
+
+@keyframes overload-shake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-5px, -3px); }
+  20% { transform: translate(5px, 3px); }
+  30% { transform: translate(-5px, 3px); }
+  40% { transform: translate(5px, -3px); }
+  50% { transform: translate(-3px, -5px); }
+  60% { transform: translate(3px, 5px); }
+  70% { transform: translate(-3px, 5px); }
+  80% { transform: translate(3px, -5px); }
+  90% { transform: translate(-2px, -2px); }
+}
+
+.animate-overload-shake {
+  animation: overload-shake 0.4s ease-in-out;
+}
+
+@keyframes flash-white {
+  0% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+
+.animate-flash-white {
+  animation: flash-white 0.3s ease-out forwards;
+}
+
+@keyframes particle-explode {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(
+      calc(-50% + var(--dx, 0) * 100px),
+      calc(-50% + var(--dy, 0) * 100px)
+    ) scale(1.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(
+      calc(-50% + var(--dx, 0) * 200px),
+      calc(-50% + var(--dy, 0) * 200px)
+    ) scale(0);
+    opacity: 0;
+  }
+}
+
+.animate-particle-explode {
+  --dx: calc(var(--x, 50) - 50);
+  --dy: calc(var(--y, 50) - 50);
+  animation: particle-explode 0.8s ease-out forwards;
+}
+
+@keyframes title-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.05);
+    filter: brightness(1.2);
+  }
+}
+
+.animate-title-pulse {
+  animation: title-pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes glow-ring {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-glow-ring {
+  animation: glow-ring 1s ease-out infinite;
+}
+
+/* ========== GAME FEEL PREMIUM ANIMATIONS ========== */
+
+/* Piece settle animation (drop with bounce) */
+@keyframes piece-settle {
+  0% {
+    transform: translateY(-8px) scale(1.05);
+    opacity: 0.9;
+  }
+  60% {
+    transform: translateY(2px) scale(0.98);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.settling {
+  animation: piece-settle 0.2s ease-out forwards;
+}
+
+/* Valid hover pulse */
+@keyframes valid-hover-pulse {
+  0%, 100% {
+    box-shadow: inset 0 0 0 2px hsl(145 80% 45% / 0.5);
+    background: hsl(145 80% 45% / 0.1);
+  }
+  50% {
+    box-shadow: inset 0 0 0 3px hsl(145 80% 45% / 0.8);
+    background: hsl(145 80% 45% / 0.2);
+  }
+}
+
+.grid-cell.valid-hover {
+  animation: valid-hover-pulse 0.4s ease-in-out;
+}
+
+/* Invalid hover shake */
+@keyframes invalid-hover-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-2px); }
+  40%, 80% { transform: translateX(2px); }
+}
+
+.grid-cell.invalid-hover {
+  animation: invalid-hover-shake 0.2s ease-out;
+  background: hsl(0 70% 50% / 0.2) !important;
+}
+
+/* Line clear glow (progressive by combo) */
+@keyframes line-clear-glow {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 5px currentColor;
+    filter: brightness(1);
+  }
+  40% {
+    transform: scale(1.15);
+    box-shadow: 0 0 25px currentColor, 0 0 50px currentColor;
+    filter: brightness(1.3);
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.clearing.combo-high {
+  animation: line-clear-glow 0.35s ease-out forwards;
+}
+
+.clearing.combo-epic {
+  animation: line-clear-glow 0.4s ease-out forwards;
+  filter: brightness(1.4);
+}
+
+/* Tension mode - grid getting full */
+@keyframes grid-pulse-tension {
+  0%, 100% { 
+    box-shadow: 0 0 20px hsl(30 80% 50% / 0.3);
+  }
+  50% { 
+    box-shadow: 0 0 40px hsl(30 80% 50% / 0.5);
+  }
+}
+
+.tension-mode .game-grid {
+  animation: grid-pulse-tension 2s ease-in-out infinite;
+}
+
+/* Danger mode - very full */
+@keyframes grid-pulse-danger {
+  0%, 100% { 
+    box-shadow: 0 0 20px hsl(0 80% 50% / 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 50px hsl(0 80% 50% / 0.7);
+  }
+}
+
+.danger-mode .game-grid {
+  animation: grid-pulse-danger 1s ease-in-out infinite;
+  border: 1px solid hsl(0 70% 50% / 0.5);
+}
+
+/* Combo badge shake for high combos */
+@keyframes combo-shake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg) scale(1.05); }
+  75% { transform: rotate(3deg) scale(1.05); }
+}
+
+.combo-shake {
+  animation: combo-shake 0.3s ease-in-out infinite;
+}
+
+/* Rainbow gradient for godlike combo */
+@keyframes rainbow-shift {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+.combo-rainbow {
+  animation: rainbow-shift 2s linear infinite;
+  background: linear-gradient(90deg, 
+    hsl(0 100% 60%), 
+    hsl(60 100% 60%), 
+    hsl(120 100% 60%), 
+    hsl(180 100% 60%), 
+    hsl(240 100% 60%), 
+    hsl(300 100% 60%)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Draggable piece glow when picked */
+.piece-glow {
+  filter: drop-shadow(0 0 15px currentColor) brightness(1.15);
+}
+
+/* Micro screen shake for piece drop */
+@keyframes micro-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-1px); }
+  75% { transform: translateX(1px); }
+}
+
+.micro-shake {
+  animation: micro-shake 0.1s ease-out;
+}

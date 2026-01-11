@@ -16,6 +16,8 @@ const SOUND_ASSETS = {
   levelUp: { path: 'sounds/levelup.mp3', url: '/assets/sounds/levelup.mp3' },
   success: { path: 'sounds/success.mp3', url: '/assets/sounds/success.mp3' },
   error: { path: 'sounds/error.mp3', url: '/assets/sounds/error.mp3' },
+  // Color Overload epic sound (reuses levelup for now)
+  overload: { path: 'sounds/levelup.mp3', url: '/assets/sounds/levelup.mp3' },
 } as const;
 
 const BGM_ASSET = {
@@ -93,12 +95,19 @@ function getAudioContext(): AudioContext {
 
 export function unlockAudioContext(): void {
   if (isNative) {
+    // Para Capacitor, garantir que o NativeAudio está pronto
+    if (!nativeAudioReady) {
+      preloadNativeAudio().then(() => {
+        console.debug('Native audio preloaded after unlock');
+      }).catch(() => {});
+    }
     isUnlocked = true;
     return;
   }
   
   const ctx = getAudioContext();
   
+  // iOS Safari fix: criar e tocar um buffer silencioso
   if (ctx.state === 'suspended') {
     const buffer = ctx.createBuffer(1, 1, 22050);
     const source = ctx.createBufferSource();
@@ -106,12 +115,20 @@ export function unlockAudioContext(): void {
     source.connect(ctx.destination);
     source.start(0);
     
+    // Múltiplas tentativas de resume para iOS
     ctx.resume().then(() => {
       isUnlocked = true;
       console.debug('AudioContext unlocked!');
     }).catch(() => {
       isUnlocked = true;
     });
+    
+    // Retry após um delay para iOS teimoso
+    setTimeout(() => {
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+    }, 100);
   } else {
     isUnlocked = true;
   }
@@ -295,4 +312,5 @@ export const sounds = {
   levelUp: (enabled: boolean) => playSoundIfEnabled('levelUp', enabled, 0.6),
   success: (enabled: boolean) => playSoundIfEnabled('success', enabled, 0.5),
   error: (enabled: boolean) => playSoundIfEnabled('error', enabled, 0.3),
+  overload: (enabled: boolean) => playSoundIfEnabled('overload', enabled, 0.8),
 };
