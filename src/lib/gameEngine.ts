@@ -203,9 +203,9 @@ function applyClearsAndScore(args: {
   const { clearedRows, clearedCols, linesCleared } = args.clear;
 
   if (linesCleared === 0) {
-    const moves = args.movesSinceClear + 1;
-    const comboAfter = moves >= 3 ? 0 : args.combo;
-    return { nextGrid: grid, pointsFromClear: 0, comboAfter, movesSinceClear: moves, multiLineBonus: 0 };
+    // COMBO QUEBRA APÓS 1 JOGADA SEM CLEAR
+    // (antes era 3, agora é imediato: combo reseta se não limpou nada)
+    return { nextGrid: grid, pointsFromClear: 0, comboAfter: 0, movesSinceClear: args.movesSinceClear + 1, multiLineBonus: 0 };
   }
 
   clearedRows.forEach(r => {

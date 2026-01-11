@@ -12,6 +12,7 @@ interface PieceTrayProps {
   onDragStart: (piece: GamePiece, element: HTMLElement) => void;
   onDragEnd: () => void;
   onDrag: (x: number, y: number) => void;
+  soundEnabled?: boolean;
 }
 
 const PieceTray: React.FC<PieceTrayProps> = ({
@@ -19,6 +20,7 @@ const PieceTray: React.FC<PieceTrayProps> = ({
   onDragStart,
   onDragEnd,
   onDrag,
+  soundEnabled = true,
 }) => {
   return (
     <div className="piece-tray w-full max-w-[360px] mx-auto">
@@ -36,6 +38,7 @@ const PieceTray: React.FC<PieceTrayProps> = ({
                 onDragStart={onDragStart}
                 onDragEnd={onDragEnd}
                 onDrag={onDrag}
+                soundEnabled={soundEnabled}
               />
             )}
           </div>

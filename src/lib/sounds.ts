@@ -260,6 +260,28 @@ export function playSoundIfEnabled(type: SoundType, soundEnabled: boolean, volum
   }
 }
 
+// Volume scales by combo level (for epic combo sounds)
+export function getComboVolume(combo: number): number {
+  if (combo >= 21) return 1.0;  // GODLIKE
+  if (combo >= 16) return 0.95; // INSANE
+  if (combo >= 11) return 0.9;  // ELECTRIC
+  if (combo >= 6) return 0.85;  // HOT
+  if (combo >= 3) return 0.75;
+  return 0.7;
+}
+
+export function playClearSound(soundEnabled: boolean, linesCleared: number): void {
+  // Volume increases with lines cleared
+  const baseVolume = 0.5;
+  const bonusVolume = Math.min(linesCleared * 0.1, 0.3);
+  playSoundIfEnabled('clear', soundEnabled, baseVolume + bonusVolume);
+}
+
+export function playComboSound(soundEnabled: boolean, combo: number): void {
+  const volume = getComboVolume(combo);
+  playSoundIfEnabled('combo', soundEnabled, volume);
+}
+
 export function playBGM(): void {
   if (isNative) {
     playNativeBGM();
@@ -306,8 +328,8 @@ export function setBGMEnabled(enabled: boolean): void {
 export const sounds = {
   click: (enabled: boolean) => playSoundIfEnabled('click', enabled, 0.3),
   drop: (enabled: boolean) => playSoundIfEnabled('drop', enabled, 0.4),
-  clear: (enabled: boolean) => playSoundIfEnabled('clear', enabled, 0.6),
-  combo: (enabled: boolean) => playSoundIfEnabled('combo', enabled, 0.7),
+  clear: (enabled: boolean, linesCleared = 1) => playClearSound(enabled, linesCleared),
+  combo: (enabled: boolean, comboLevel = 1) => playComboSound(enabled, comboLevel),
   gameOver: (enabled: boolean) => playSoundIfEnabled('gameOver', enabled, 0.5),
   levelUp: (enabled: boolean) => playSoundIfEnabled('levelUp', enabled, 0.6),
   success: (enabled: boolean) => playSoundIfEnabled('success', enabled, 0.5),

@@ -8,6 +8,7 @@ import GameOverModal from './GameOverModal';
 import UndoButton from './UndoButton';
 import FeedbackText from './FeedbackText';
 import ParticleEffect from './ParticleEffect';
+import DirectionalParticles, { type ClearLine } from './DirectionalParticles';
 import StarConvergence from './StarConvergence';
 import TutorialOverlay from './TutorialOverlay';
 import CollectAnimation from './CollectAnimation';
@@ -416,6 +417,7 @@ const BlockBlastGame: React.FC = () => {
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
   const [feedbackKey, setFeedbackKey] = useState(0);
   const [particleTrigger, setParticleTrigger] = useState<{ x: number; y: number; color: string } | null>(null);
+  const [directionalClearLines, setDirectionalClearLines] = useState<ClearLine[]>([]);
   
   // Helper to show feedback - clears previous and sets new with unique key
   const showFeedback = useCallback((msg: FeedbackMessage) => {
@@ -549,7 +551,8 @@ const BlockBlastGame: React.FC = () => {
     
     // STRICT: Only place if canPlace returns true
     if (!isValid) {
-      triggerHaptic('light');
+      // HAPTIC + SOUND on invalid placement
+      triggerHaptic('error');
       sounds.error(playerResources.soundEnabled);
       setDragState(null);
       setGhostState(null);
@@ -685,6 +688,15 @@ const BlockBlastGame: React.FC = () => {
         });
         setClearingCells(cellsToAnimate);
         
+        // DIRECTIONAL PARTICLES: Build clear lines for directional explosion
+        const clearLines: ClearLine[] = [
+          ...result.clear.clearedRows.map(idx => ({ type: 'row' as const, index: idx })),
+          ...result.clear.clearedCols.map(idx => ({ type: 'col' as const, index: idx })),
+        ];
+        setDirectionalClearLines(clearLines);
+        // Clear after animation
+        setTimeout(() => setDirectionalClearLines([]), 600);
+        
         // Skip normal feedback in tutorial - the overlay handles it
         if (!tutorial.isActive) {
           const clearMsg = getClearMessage(result.clear.linesCleared);
@@ -698,11 +710,11 @@ const BlockBlastGame: React.FC = () => {
             showFeedback(clearMsg);
           }
           
-          // Play clear/combo sound
+          // Play clear/combo sound with volume scaling
           if (result.next.combo > 1) {
-            sounds.combo(playerResources.soundEnabled);
+            sounds.combo(playerResources.soundEnabled, result.next.combo);
           } else {
-            sounds.clear(playerResources.soundEnabled);
+            sounds.clear(playerResources.soundEnabled, result.clear.linesCleared);
           }
         }
         
@@ -1153,6 +1165,13 @@ const BlockBlastGame: React.FC = () => {
       {/* Particle effects layer */}
       <ParticleEffect trigger={particleTrigger} count={16} />
       
+      {/* Directional particles for line clears */}
+      <DirectionalParticles 
+        lines={directionalClearLines} 
+        boardRect={boardMetrics ? { left: boardMetrics.left, top: boardMetrics.top, cellSize: boardMetrics.cellSize } : null}
+        gridSize={GRID_SIZE}
+      />
+      
       {/* Feedback text overlay */}
       <FeedbackText 
         message={feedbackMessage}
@@ -1308,6 +1327,7 @@ const BlockBlastGame: React.FC = () => {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onDrag={handleDrag}
+            soundEnabled={playerResources.soundEnabled}
           />
         </div>
         

@@ -1,6 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
+import { triggerHaptic } from '@/lib/feedback';
+import { sounds } from '@/lib/sounds';
+import { TILE_COLORS } from '@/lib/pieces';
 
 // FIXED OFFSET: Piece floats above finger (never covered)
 const DRAG_OFFSET_Y = 90; // px above touch point
@@ -18,6 +21,7 @@ interface DraggablePieceProps {
   onDragStart: (piece: GamePiece, element: HTMLElement) => void;
   onDragEnd: () => void;
   onDrag: (x: number, y: number) => void;
+  soundEnabled?: boolean;
 }
 
 const DraggablePiece: React.FC<DraggablePieceProps> = ({
@@ -26,6 +30,7 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
   onDragStart,
   onDragEnd,
   onDrag,
+  soundEnabled = true,
 }) => {
   const pieceRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -39,11 +44,19 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
   const pieceWidthPx = piece.shape[0].length * tileSize + (piece.shape[0].length - 1) * gap;
   const pieceHeightPx = piece.shape.length * tileSize + (piece.shape.length - 1) * gap;
 
+  // Get piece color for dynamic glow
+  const pieceColor = TILE_COLORS[(piece.colorId - 1) % TILE_COLORS.length];
+  const glowColor = `hsl(${pieceColor.hue}, 80%, 60%)`;
+
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!isAvailable || !pieceRef.current) return;
     
     e.preventDefault();
     setIsDragging(true);
+    
+    // GAME FEEL: Haptic + Sound on pick
+    triggerHaptic('light');
+    sounds.click(soundEnabled);
     
     // Initial position with fixed offset applied
     const floatingX = e.clientX + DRAG_OFFSET_X;
@@ -131,10 +144,10 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
         {pieceContent(1)}
       </div>
 
-      {/* Floating piece during drag - slightly larger with glow */}
+      {/* Floating piece during drag - slightly larger with DYNAMIC COLOR glow */}
       {isDragging && createPortal(
         <div
-          className="fixed pointer-events-none piece-glow"
+          className="fixed pointer-events-none"
           style={{
             left: dragPosition.x,
             top: dragPosition.y,
@@ -142,7 +155,7 @@ const DraggablePiece: React.FC<DraggablePieceProps> = ({
             marginLeft: -(pieceWidthPx * 1.15) / 2,
             marginTop: -(pieceHeightPx * 1.15) / 2,
             transform: 'scale(1.15)',
-            filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.5)) drop-shadow(0 0 20px rgba(100,200,255,0.3)) brightness(1.1)',
+            filter: `drop-shadow(0 12px 24px rgba(0,0,0,0.5)) drop-shadow(0 0 25px ${glowColor}) brightness(1.1)`,
             zIndex: 9999,
           }}
         >
