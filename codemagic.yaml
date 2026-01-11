@@ -28,7 +28,12 @@ workflows:
           npx cap sync ios
       - name: Install CocoaPods dependencies
         script: |
-          cd ios/App && pod install
+          cd ios/App && pod install --repo-update
+      - name: Set version
+        script: |
+          cd ios/App
+          agvtool new-marketing-version 1.0.0
+          agvtool new-version -all $BUILD_NUMBER
       - name: Set up code signing
         script: |
           xcode-project use-profiles
