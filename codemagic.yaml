@@ -8,11 +8,10 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.blockexplosion
       vars:
-        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
       node: 22
       xcode: latest
-      cocoapods: default
     scripts:
       - name: Install npm dependencies
         script: |
@@ -29,7 +28,7 @@ workflows:
       - name: Verify iOS setup
         script: |
           ls -la ios/App/
-          test -d ios/App/App.xcworkspace && echo "Workspace exists" || exit 1
+          test -d ios/App/App.xcodeproj && echo "Project exists" || exit 1
       - name: Set version
         script: |
           cd ios/App
@@ -41,7 +40,7 @@ workflows:
       - name: Build iOS app
         script: |
           xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
+            --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
     artifacts:
       - build/ios/ipa/*.ipa
