@@ -22,7 +22,6 @@ export interface EngineState {
   score: number;
   combo: number;
   movesSinceClear: number;
-  clusterCombo: number; // Combo baseado em clusters de cor
 }
 
 export const GRID_SIZE = 8;
@@ -143,7 +142,6 @@ export function placePiece(
     score: state.score + pointsGained,
     combo: comboAfter,
     movesSinceClear,
-    clusterCombo: state.clusterCombo, // Preservar cluster combo (gerenciado pelo clusterEngine)
   };
 
   return {
@@ -245,6 +243,49 @@ export function createInitialState(): EngineState {
     score: 0,
     combo: 0,
     movesSinceClear: 0,
-    clusterCombo: 0,
   };
+}
+
+/**
+ * Encontra a cor dominante nas linhas/colunas que serão limpas
+ */
+export function findDominantColorInClears(
+  grid: Grid, 
+  rows: number[], 
+  cols: number[]
+): ColorId {
+  const colorCounts = new Map<ColorId, number>();
+  
+  // Contar cores nas linhas
+  for (const row of rows) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      const color = grid[row][c];
+      if (color !== 0) {
+        colorCounts.set(color, (colorCounts.get(color) || 0) + 1);
+      }
+    }
+  }
+  
+  // Contar cores nas colunas (evitar contar intersecções duas vezes)
+  for (const col of cols) {
+    for (let r = 0; r < GRID_SIZE; r++) {
+      if (rows.includes(r)) continue; // já contou na linha
+      const color = grid[r][col];
+      if (color !== 0) {
+        colorCounts.set(color, (colorCounts.get(color) || 0) + 1);
+      }
+    }
+  }
+  
+  // Retornar a mais frequente
+  let dominant: ColorId = 1;
+  let maxCount = 0;
+  for (const [color, count] of colorCounts) {
+    if (count > maxCount) {
+      maxCount = count;
+      dominant = color;
+    }
+  }
+  
+  return dominant;
 }
