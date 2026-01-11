@@ -52,7 +52,7 @@ const StarTutorialOverlay: React.FC<StarTutorialOverlayProps> = ({
             "shadow-lg shadow-yellow-500/30",
             "whitespace-nowrap"
           )}>
-            Toque para ativar! ⭐
+            Tap to activate! ⭐
           </div>
           
           {/* Arrow pointing right */}
