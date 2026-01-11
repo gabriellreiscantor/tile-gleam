@@ -7,8 +7,7 @@ import SettingsModal from './SettingsModal';
 import GameOverModal from './GameOverModal';
 import UndoButton from './UndoButton';
 import FeedbackText from './FeedbackText';
-import ParticleEffect from './ParticleEffect';
-import DirectionalParticles, { type ClearLine } from './DirectionalParticles';
+
 import StarConvergence from './StarConvergence';
 import TutorialOverlay from './TutorialOverlay';
 import CollectAnimation from './CollectAnimation';
@@ -26,6 +25,7 @@ import {
   GRID_SIZE,
   cloneGrid,
   findDominantColorInClears,
+  findClears,
   type EngineState,
 } from '@/lib/gameEngine';
 import { 
@@ -415,8 +415,8 @@ const BlockBlastGame: React.FC = () => {
   // ========== FEEDBACK STATE ==========
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
   const [feedbackKey, setFeedbackKey] = useState(0);
-  const [particleTrigger, setParticleTrigger] = useState<{ x: number; y: number; color: string } | null>(null);
-  const [directionalClearLines, setDirectionalClearLines] = useState<ClearLine[]>([]);
+  // Preview unification: cells that will change color when piece is dropped
+  const [previewUnifiedCells, setPreviewUnifiedCells] = useState<Map<string, number>>(new Map());
   
   // Helper to show feedback - clears previous and sets new with unique key
   const showFeedback = useCallback((msg: FeedbackMessage) => {
@@ -532,8 +532,54 @@ const BlockBlastGame: React.FC = () => {
         colorId: piece.colorId,
         isValid,
       });
+      
+      // Preview unification: if valid position, check if it will complete lines
+      if (isValid) {
+        // Simulate grid with the piece placed
+        const simulatedGrid = cloneGrid(gameState.grid);
+        for (let py = 0; py < piece.shape.length; py++) {
+          for (let px = 0; px < piece.shape[py].length; px++) {
+            if (piece.shape[py][px]) {
+              simulatedGrid[gy + py][gx + px] = piece.colorId;
+            }
+          }
+        }
+        
+        // Check which lines would be cleared
+        const { clearedRows, clearedCols, linesCleared } = findClears(simulatedGrid);
+        
+        if (linesCleared > 0) {
+          // Create map of cells that will unify to the dragged piece color
+          const unifiedCells = new Map<string, number>();
+          
+          // Mark cells in cleared rows (only existing blocks, not ghost)
+          for (const row of clearedRows) {
+            for (let col = 0; col < GRID_SIZE; col++) {
+              if (gameState.grid[row][col] !== 0) {
+                unifiedCells.set(`${col}-${row}`, piece.colorId);
+              }
+            }
+          }
+          
+          // Mark cells in cleared columns
+          for (const col of clearedCols) {
+            for (let row = 0; row < GRID_SIZE; row++) {
+              if (gameState.grid[row][col] !== 0) {
+                unifiedCells.set(`${col}-${row}`, piece.colorId);
+              }
+            }
+          }
+          
+          setPreviewUnifiedCells(unifiedCells);
+        } else {
+          setPreviewUnifiedCells(new Map());
+        }
+      } else {
+        setPreviewUnifiedCells(new Map());
+      }
     } else {
       setGhostState(null);
+      setPreviewUnifiedCells(new Map());
     }
   }, [dragState, gameState.grid, getBoardMetrics]);
 
@@ -542,6 +588,7 @@ const BlockBlastGame: React.FC = () => {
       // No valid drop position - snap back
       setDragState(null);
       setGhostState(null);
+      setPreviewUnifiedCells(new Map());
       return;
     }
     
@@ -555,6 +602,7 @@ const BlockBlastGame: React.FC = () => {
       sounds.error(playerResources.soundEnabled);
       setDragState(null);
       setGhostState(null);
+      setPreviewUnifiedCells(new Map());
       return;
     }
     
@@ -751,28 +799,11 @@ const BlockBlastGame: React.FC = () => {
         });
         setClearingCells(prev => new Set([...prev, ...cellsToAnimate]));
         
-        // DIRECTIONAL PARTICLES
-        const clearLines: ClearLine[] = [
-          ...clearedRows.map(idx => ({ type: 'row' as const, index: idx })),
-          ...clearedCols.map(idx => ({ type: 'col' as const, index: idx })),
-        ];
-        setDirectionalClearLines(clearLines);
-        setTimeout(() => setDirectionalClearLines([]), 600);
-        
         // Feedback de clear normal (quando NÃO é combo especial)
         if (!isCombo && !tutorial.isActive) {
           const clearMsg = getClearMessage(linesCleared);
           showFeedback(clearMsg);
           playClearSoundWithCombo(playerResources.soundEnabled, linesCleared, finalState.combo);
-        }
-        
-        const metrics = getBoardMetrics();
-        if (metrics) {
-          setParticleTrigger({
-            x: metrics.left + metrics.width / 2,
-            y: metrics.top + metrics.height / 2,
-            color: '',
-          });
         }
         
         if (!isCombo) {
@@ -1120,16 +1151,6 @@ const BlockBlastGame: React.FC = () => {
   return (
     <>
       
-      {/* Particle effects layer */}
-      <ParticleEffect trigger={particleTrigger} count={16} />
-      
-      {/* Directional particles for line clears */}
-      <DirectionalParticles 
-        lines={directionalClearLines} 
-        boardRect={boardMetrics ? { left: boardMetrics.left, top: boardMetrics.top, cellSize: boardMetrics.cellSize } : null}
-        gridSize={GRID_SIZE}
-      />
-      
       {/* Feedback text overlay */}
       <FeedbackText 
         message={feedbackMessage}
@@ -1261,6 +1282,7 @@ const BlockBlastGame: React.FC = () => {
               tutorialTargetCells={tutorialTargetCells}
               justPlacedCells={justPlacedCells}
               highlightColor={highlightColor}
+              previewUnifiedCells={previewUnifiedCells}
               onCellDrop={handleCellDrop}
               onCellHover={handleCellHover}
               onCellLeave={handleCellLeave}
