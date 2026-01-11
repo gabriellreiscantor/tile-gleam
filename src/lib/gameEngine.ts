@@ -22,6 +22,7 @@ export interface EngineState {
   score: number;
   combo: number;
   movesSinceClear: number;
+  clusterCombo: number; // Combo baseado em clusters de cor
 }
 
 export const GRID_SIZE = 8;
@@ -142,6 +143,7 @@ export function placePiece(
     score: state.score + pointsGained,
     combo: comboAfter,
     movesSinceClear,
+    clusterCombo: state.clusterCombo, // Preservar cluster combo (gerenciado pelo clusterEngine)
   };
 
   return {
@@ -243,5 +245,6 @@ export function createInitialState(): EngineState {
     score: 0,
     combo: 0,
     movesSinceClear: 0,
+    clusterCombo: 0,
   };
 }

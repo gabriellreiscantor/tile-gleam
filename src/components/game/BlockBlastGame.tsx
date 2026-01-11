@@ -24,8 +24,14 @@ import {
   anyMoveAvailable,
   pixelToGrid,
   GRID_SIZE,
+  cloneGrid,
   type EngineState,
 } from '@/lib/gameEngine';
+import {
+  placePieceWithClusters,
+  MIN_CLUSTER_SIZE_FOR_CLEAR,
+  type ClusterPlacementResult,
+} from '@/lib/clusterEngine';
 import { 
   generateTrio, 
   createInitialRngState, 
@@ -379,6 +385,7 @@ const BlockBlastGame: React.FC = () => {
         score: 0,
         combo: 0,
         movesSinceClear: 0,
+        clusterCombo: 0,
       };
     }
     return createInitialState();
@@ -579,30 +586,154 @@ const BlockBlastGame: React.FC = () => {
     }
     
     try {
-      const result = placePiece(
-        gameState,
+      // ========== SISTEMA DE CLUSTERS ==========
+      // Usar placePieceWithClusters para aplicar absorção de cor e limpeza por massa
+      const clusterResult = placePieceWithClusters(
+        gameState.grid,
         piece.shape,
         gridX,
         gridY,
-        piece.colorId
+        piece.colorId,
+        gameState.clusterCombo
       );
       
-      const hadClear = result.clear.linesCleared > 0;
+      // Grid do cluster já tem a peça colocada e cores absorvidas
+      
+      // Agora mesclar: 
+      // - Grid final = resultado do cluster (já inclui absorção e limpeza de clusters)
+      // - Depois aplicar limpeza de linhas tradicionais se houver
+      let finalGrid = clusterResult.grid;
+      
+      // Re-verificar linhas no grid do cluster (pode ter mudado por absorção)
+      const clearedRows: number[] = [];
+      const clearedCols: number[] = [];
+      for (let r = 0; r < GRID_SIZE; r++) {
+        if (finalGrid[r].every(v => v !== 0)) clearedRows.push(r);
+      }
+      for (let c = 0; c < GRID_SIZE; c++) {
+        let full = true;
+        for (let r = 0; r < GRID_SIZE; r++) {
+          if (finalGrid[r][c] === 0) { full = false; break; }
+        }
+        if (full) clearedCols.push(c);
+      }
+      
+      // Aplicar limpeza de linhas
+      clearedRows.forEach(r => {
+        for (let c = 0; c < GRID_SIZE; c++) finalGrid[r][c] = 0;
+      });
+      clearedCols.forEach(c => {
+        for (let r = 0; r < GRID_SIZE; r++) finalGrid[r][c] = 0;
+      });
+      
+      const linesCleared = clearedRows.length + clearedCols.length;
+      const hadLineClear = linesCleared > 0;
+      const hadClusterClear = clusterResult.hadClear;
+      const hadClear = hadLineClear || hadClusterClear;
+      
+      // Calcular pontuação de linhas
+      let linePoints = 0;
+      let lineCombo = gameState.combo;
+      if (linesCleared > 0) {
+        lineCombo = gameState.combo + linesCleared;
+        const base = 25 * linesCleared;
+        const mult = 1 + Math.min(lineCombo, 20) * 0.08 + Math.max(0, lineCombo - 20) * 0.03;
+        const multiLineBonus = linesCleared <= 1 ? 0 : { 2: 10, 3: 30, 4: 60 }[Math.min(linesCleared, 4)] ?? 60;
+        linePoints = Math.round(base * mult) + multiLineBonus;
+      } else {
+        lineCombo = 0; // Reset line combo se não limpou linhas
+      }
+      
+      // Pontuação final
+      const totalPoints = clusterResult.pointsGained + linePoints;
+      
+      // Atualizar estado
+      const finalState: EngineState = {
+        grid: finalGrid,
+        score: gameState.score + totalPoints,
+        combo: lineCombo,
+        movesSinceClear: hadLineClear ? 0 : gameState.movesSinceClear + 1,
+        clusterCombo: clusterResult.clusterComboAfter,
+      };
+      
       setLastMoveHadClear(hadClear);
       
       // Track just placed cells for bounce animation
       const placedCellsSet = new Set<string>();
-      for (let py = 0; py < piece.shape.length; py++) {
-        for (let px = 0; px < piece.shape[py].length; px++) {
-          if (piece.shape[py][px] === 1) {
-            placedCellsSet.add(`${gridX + px}-${gridY + py}`);
-          }
-        }
+      for (const { x, y } of clusterResult.placedCells) {
+        placedCellsSet.add(`${x}-${y}`);
       }
       setJustPlacedCells(placedCellsSet);
       // Clear after animation
       setTimeout(() => setJustPlacedCells(new Set()), 300);
-      setLastMoveHadClear(hadClear);
+      
+      // Feedback para absorção de cor
+      if (clusterResult.hadAbsorption && !tutorial.isActive) {
+        showFeedback({
+          text: 'ABSORB!',
+          emoji: '🔄',
+          intensity: 'medium',
+          color: 'secondary',
+        });
+        sounds.click(playerResources.soundEnabled);
+      }
+      
+      // Feedback para fusão de clusters
+      if (clusterResult.hadFusion && !tutorial.isActive) {
+        showFeedback({
+          text: 'FUSION!',
+          emoji: '⚡',
+          intensity: 'high',
+          color: 'primary',
+        });
+        sounds.combo(playerResources.soundEnabled, clusterResult.clusterComboAfter);
+        triggerHaptic('medium');
+      }
+      
+      // Feedback para limpeza de cluster
+      if (hadClusterClear && !tutorial.isActive) {
+        const totalClearedBlocks = clusterResult.clearedClusters.reduce((sum, c) => sum + c.size, 0);
+        showFeedback({
+          text: `CLUSTER x${totalClearedBlocks}!`,
+          emoji: '💥',
+          intensity: 'epic',
+          color: 'rainbow',
+        });
+        sounds.combo(playerResources.soundEnabled, clusterResult.clusterComboAfter);
+        triggerHaptic('heavy');
+        setScreenShake(true);
+        setTimeout(() => setScreenShake(false), 300);
+        
+        // Animar células limpas
+        const clusterCellsToAnimate = new Set<string>();
+        for (const cluster of clusterResult.clearedClusters) {
+          for (const { x, y } of cluster.cells) {
+            clusterCellsToAnimate.add(`${x}-${y}`);
+          }
+        }
+        setClearingCells(clusterCellsToAnimate);
+        setTimeout(() => setClearingCells(new Set()), 300);
+      }
+      
+      // Mostrar combo de cluster se aumentou
+      if (clusterResult.clusterComboAfter > 0 && clusterResult.clusterComboAfter !== gameState.clusterCombo && !tutorial.isActive) {
+        setTimeout(() => {
+          showFeedback({
+            text: `COMBO ${clusterResult.clusterComboAfter}`,
+            emoji: '🔥',
+            intensity: clusterResult.clusterComboAfter >= 5 ? 'epic' : 'high',
+            color: clusterResult.clusterComboAfter >= 5 ? 'rainbow' : 'primary',
+          });
+        }, 400);
+        
+        // Combo pulse para combos altos
+        if (clusterResult.clusterComboAfter >= 10) {
+          setComboPulse('intense');
+        } else if (clusterResult.clusterComboAfter >= 5) {
+          setComboPulse('normal');
+        }
+        setTimeout(() => setComboPulse('none'), 1500);
+      }
       
       // Record move for replay with cinematographic data (skip in tutorial)
       if (!tutorial.isActive) {
@@ -612,15 +743,15 @@ const BlockBlastGame: React.FC = () => {
           colorId: piece.colorId,
           gridX,
           gridY,
-          scoreAfter: result.next.score,
-          comboAfter: result.next.combo,
-          linesCleared: result.clear.linesCleared,
-          gridSnapshot: result.next.grid,
+          scoreAfter: finalState.score,
+          comboAfter: finalState.combo,
+          linesCleared: linesCleared,
+          gridSnapshot: finalState.grid,
           // Cinematographic data
           gridBefore: gameState.grid,
           dragPath: dragPathRef.current,
-          clearedRows: result.clear.clearedRows,
-          clearedCols: result.clear.clearedCols,
+          clearedRows: clearedRows,
+          clearedCols: clearedCols,
           placementDuration: Date.now() - dragStartTimeRef.current,
         });
       }
@@ -633,16 +764,16 @@ const BlockBlastGame: React.FC = () => {
       // Spawn items on placed blocks (skip in tutorial)
       let newItemGrid = itemGrid;
       if (!tutorial.isActive) {
-        const gridOccupancy = getGridOccupancy(result.next.grid);
+        const gridOccupancy = getGridOccupancy(finalState.grid);
         newItemGrid = spawnItemsForPiece(
           itemGrid,
           piece.shape,
           gridX,
           gridY,
           { 
-            score: result.next.score,
-            combo: result.next.combo,
-            linesCleared: result.clear.linesCleared,
+            score: finalState.score,
+            combo: finalState.clusterCombo,
+            linesCleared: linesCleared + clusterResult.clearedClusters.length,
             gridOccupancy,
             sessionStats: itemSessionStats,
             lifetimeGames: playerResources.totalGamesPlayed,
@@ -652,21 +783,18 @@ const BlockBlastGame: React.FC = () => {
         );
       }
       
-      if (hadClear) {
-        // Collect items from cleared lines
+      // Coletar itens de linhas limpas (sistema tradicional)
+      if (hadLineClear) {
         if (!tutorial.isActive) {
           const collectionResult = collectItemsFromClears(
             newItemGrid,
-            result.clear.clearedRows,
-            result.clear.clearedCols
+            clearedRows,
+            clearedCols
           );
           
           if (collectionResult.collected.length > 0) {
-            // Trigger collection animation
             setPendingCollection(collectionResult.collected);
-            // Update item resources
             setItemResources(prev => addCollectedItems(prev, collectionResult.collected));
-            // Update session stats for each collected item
             setItemSessionStats(prev => {
               let newStats = prev;
               for (const item of collectionResult.collected) {
@@ -678,70 +806,48 @@ const BlockBlastGame: React.FC = () => {
               }
               return newStats;
             });
-            // Update item grid
             newItemGrid = collectionResult.newItemGrid;
-            // Play collection sound
             sounds.success(playerResources.soundEnabled);
           }
         }
         
         const cellsToAnimate = new Set<string>();
-        result.clear.clearedRows.forEach(row => {
+        clearedRows.forEach(row => {
           for (let col = 0; col < GRID_SIZE; col++) {
             cellsToAnimate.add(`${col}-${row}`);
           }
         });
-        result.clear.clearedCols.forEach(col => {
+        clearedCols.forEach(col => {
           for (let row = 0; row < GRID_SIZE; row++) {
             cellsToAnimate.add(`${col}-${row}`);
           }
         });
-        setClearingCells(cellsToAnimate);
+        setClearingCells(prev => new Set([...prev, ...cellsToAnimate]));
         
-        // DIRECTIONAL PARTICLES: Build clear lines for directional explosion
+        // DIRECTIONAL PARTICLES
         const clearLines: ClearLine[] = [
-          ...result.clear.clearedRows.map(idx => ({ type: 'row' as const, index: idx })),
-          ...result.clear.clearedCols.map(idx => ({ type: 'col' as const, index: idx })),
+          ...clearedRows.map(idx => ({ type: 'row' as const, index: idx })),
+          ...clearedCols.map(idx => ({ type: 'col' as const, index: idx })),
         ];
         setDirectionalClearLines(clearLines);
-        // Clear after animation
         setTimeout(() => setDirectionalClearLines([]), 600);
         
         if (!tutorial.isActive) {
-          const clearMsg = getClearMessage(result.clear.linesCleared);
-          // Add multi-line bonus info to feedback
-          if (result.score.multiLineBonus > 0) {
+          const clearMsg = getClearMessage(linesCleared);
+          const multiLineBonus = linesCleared <= 1 ? 0 : { 2: 10, 3: 30, 4: 60 }[Math.min(linesCleared, 4)] ?? 60;
+          if (multiLineBonus > 0) {
             showFeedback({
               ...clearMsg,
-              text: `${clearMsg.text} +${result.score.multiLineBonus}`,
+              text: `${clearMsg.text} +${multiLineBonus}`,
             });
           } else {
             showFeedback(clearMsg);
           }
           
-          // Play clear/combo sound with pitch scaling
-          if (result.next.combo > 1) {
-            sounds.combo(playerResources.soundEnabled, result.next.combo);
+          if (lineCombo > 1) {
+            sounds.combo(playerResources.soundEnabled, lineCombo);
           } else {
-            playClearSoundWithCombo(playerResources.soundEnabled, result.clear.linesCleared, result.next.combo);
-          }
-          
-          // Combo pulse effect for high combos
-          if (result.next.combo >= 16) {
-            setComboPulse('intense');
-          } else if (result.next.combo >= 6) {
-            setComboPulse('normal');
-          }
-          // Clear combo pulse after a short delay
-          setTimeout(() => setComboPulse('none'), 1500);
-          
-          // Highlight dominant color for "everything connected" feel
-          if (result.next.combo >= 4) {
-            const dominantColor = findDominantColor(result.next.grid);
-            if (dominantColor) {
-              setHighlightColor(dominantColor);
-              setTimeout(() => setHighlightColor(null), 800);
-            }
+            playClearSoundWithCombo(playerResources.soundEnabled, linesCleared, lineCombo);
           }
         }
         
@@ -754,44 +860,23 @@ const BlockBlastGame: React.FC = () => {
           });
         }
         
-        triggerHaptic(result.clear.linesCleared >= 2 ? 'heavy' : 'medium');
+        triggerHaptic(linesCleared >= 2 ? 'heavy' : 'medium');
         
-        if (result.clear.linesCleared >= 2) {
+        if (linesCleared >= 2) {
           setScreenShake(true);
           setTimeout(() => setScreenShake(false), 300);
         }
         
         setTimeout(() => {
           setClearingCells(new Set());
-          
-          if (!tutorial.isActive) {
-            const comboMsg = getComboMessage(result.next.combo);
-            if (comboMsg) {
-              setTimeout(() => showFeedback(comboMsg), 300);
-            }
-          }
         }, 300);
-      } else {
+      } else if (!hadClusterClear) {
         triggerHaptic('light');
         sounds.drop(playerResources.soundEnabled);
       }
       
-      setGameState(result.next);
+      setGameState(finalState);
       setItemGrid(newItemGrid);
-      
-      // Check for Color Overload (only if no lines were cleared and not in tutorial)
-      if (!hadClear && !tutorial.isActive) {
-        // Build list of placed cells
-        const placedCells: { x: number; y: number }[] = [];
-        for (let py = 0; py < piece.shape.length; py++) {
-          for (let px = 0; px < piece.shape[py].length; px++) {
-            if (piece.shape[py][px] === 1) {
-              placedCells.push({ x: gridX + px, y: gridY + py });
-            }
-          }
-        }
-        
-      }
       
       // Remove used piece
       const newPieces = pieces.map(p => 
@@ -804,19 +889,19 @@ const BlockBlastGame: React.FC = () => {
       if (tutorial.isActive) {
         setPieces(newPieces);
       } else if (remainingPieces.length === 0) {
-        const freshPieces = generatePiecesWithRng(result.next);
+        const freshPieces = generatePiecesWithRng(finalState);
         setPieces(freshPieces);
         
         setTimeout(() => {
-          if (checkGameOver(result.next, freshPieces)) {
-            handleGameOver(result.next);
+          if (checkGameOver(finalState, freshPieces)) {
+            handleGameOver(finalState);
           }
         }, 100);
       } else {
         setPieces(newPieces);
         
-        if (checkGameOver(result.next, newPieces)) {
-          handleGameOver(result.next);
+        if (checkGameOver(finalState, newPieces)) {
+          handleGameOver(finalState);
         }
       }
     } catch (e) {
