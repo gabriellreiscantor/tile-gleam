@@ -21,6 +21,7 @@ interface GameBoardProps {
   tutorialTargetCells?: Set<string> | null;
   justPlacedCells?: Set<string>;
   highlightColor?: number | null;
+  previewUnifiedCells?: Map<string, number>; // key: "x-y", value: colorId for preview
   onCellDrop: (x: number, y: number) => void;
   onCellHover: (x: number, y: number) => void;
   onCellLeave: () => void;
@@ -35,6 +36,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   tutorialTargetCells,
   justPlacedCells,
   highlightColor,
+  previewUnifiedCells,
   onCellDrop,
   onCellHover,
   onCellLeave,
@@ -76,6 +78,9 @@ const GameBoard: React.FC<GameBoardProps> = ({
             const isJustPlaced = justPlacedCells?.has(key) ?? false;
             const isHighlighted = highlightColor !== null && highlightColor !== undefined && cell === highlightColor;
             
+            // Check if this cell should show preview unified color
+            const previewColor = previewUnifiedCells?.get(key);
+            const displayColorId = previewColor ?? cell;
             // Calculate tile index for staggered idle animation
             const tileIndex = y * GRID_SIZE + x;
 
@@ -97,12 +102,16 @@ const GameBoard: React.FC<GameBoardProps> = ({
                   <div
                     className={cn(
                       'game-tile w-full h-full relative',
-                      `tile-${cell}`,
+                      `tile-${displayColorId}`,
                       isClearing && 'clearing',
                       isJustPlaced && 'tile-just-placed',
-                      isHighlighted && 'tile-highlight'
+                      isHighlighted && 'tile-highlight',
+                      previewColor && 'tile-preview-unified'
                     )}
-                    style={{ '--tile-index': tileIndex } as React.CSSProperties}
+                    style={{ 
+                      '--tile-index': tileIndex,
+                      transition: previewColor ? 'background-color 0.15s ease-out, box-shadow 0.15s ease-out' : undefined
+                    } as React.CSSProperties}
                   >
                     {/* Item badge in top-right corner */}
                     {itemInCell && <ItemBadge itemType={itemInCell} />}

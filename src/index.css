@@ -988,3 +988,20 @@ html, body {
 .feedback-glow-epic {
   animation: feedback-glow-pulse 0.4s ease-in-out infinite;
 }
+
+/* 7. Preview unified color effect - shows when dragging will complete a line */
+@keyframes tile-preview-pulse {
+  0%, 100% { 
+    filter: brightness(1.2);
+    box-shadow: 0 0 8px currentColor;
+  }
+  50% { 
+    filter: brightness(1.4);
+    box-shadow: 0 0 16px currentColor, 0 0 24px currentColor;
+  }
+}
+
+.tile-preview-unified {
+  animation: tile-preview-pulse 0.5s ease-in-out infinite;
+  z-index: 5;
+}
