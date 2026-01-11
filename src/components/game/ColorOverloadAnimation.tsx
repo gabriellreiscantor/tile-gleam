@@ -126,10 +126,10 @@ const ColorOverloadAnimation: React.FC<ColorOverloadAnimationProps> = ({
         
         {/* Title */}
         {(phase === 'title' || phase === 'convert' || phase === 'shake') && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center px-4">
             <div 
               className={cn(
-                "text-4xl md:text-6xl font-black tracking-wider",
+                "text-4xl md:text-6xl font-black tracking-wider text-center w-full",
                 "animate-title-pulse"
               )}
               style={{
@@ -144,9 +144,9 @@ const ColorOverloadAnimation: React.FC<ColorOverloadAnimationProps> = ({
         
         {/* Score display */}
         {phase === 'score' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-4">
             <div 
-              className="text-6xl md:text-8xl font-black animate-score-pop"
+              className="text-6xl md:text-8xl font-black animate-score-pop text-center"
               style={{
                 color: color,
                 textShadow: `0 0 40px ${color}`,
@@ -154,7 +154,7 @@ const ColorOverloadAnimation: React.FC<ColorOverloadAnimationProps> = ({
             >
               +{totalPoints.toLocaleString()}
             </div>
-            <div className="text-2xl text-white/80 font-bold">
+            <div className="text-2xl text-white/80 font-bold text-center">
               {cellCount} blocks cleared!
             </div>
           </div>
