@@ -160,7 +160,7 @@ async function preloadWebAudio(): Promise<void> {
   console.debug('Web audio preloaded');
 }
 
-function playWebSound(type: SoundType, volume: number): void {
+function playWebSound(type: SoundType, volume: number, pitch = 1.0): void {
   if (!isUnlocked) {
     unlockAudioContext();
   }
@@ -179,6 +179,7 @@ function playWebSound(type: SoundType, volume: number): void {
     const gainNode = ctx.createGain();
     
     source.buffer = buffer;
+    source.playbackRate.value = Math.max(0.5, Math.min(2.0, pitch)); // Clamp pitch 0.5-2.0
     gainNode.gain.value = Math.max(0, Math.min(1, volume));
     
     source.connect(gainNode);
@@ -246,17 +247,17 @@ export async function preloadSounds(): Promise<void> {
   }
 }
 
-export function playSound(type: SoundType, volume = 0.5): void {
+export function playSound(type: SoundType, volume = 0.5, pitch = 1.0): void {
   if (isNative) {
     playNativeSound(type, volume);
   } else {
-    playWebSound(type, volume);
+    playWebSound(type, volume, pitch);
   }
 }
 
-export function playSoundIfEnabled(type: SoundType, soundEnabled: boolean, volume = 0.5): void {
+export function playSoundIfEnabled(type: SoundType, soundEnabled: boolean, volume = 0.5, pitch = 1.0): void {
   if (soundEnabled) {
-    playSound(type, volume);
+    playSound(type, volume, pitch);
   }
 }
 
@@ -277,9 +278,23 @@ export function playClearSound(soundEnabled: boolean, linesCleared: number): voi
   playSoundIfEnabled('clear', soundEnabled, baseVolume + bonusVolume);
 }
 
+// Pitch scales by combo level for escalating intensity
+export function getComboPitch(combo: number): number {
+  // Start at 1.0, increase by 0.03 per combo level, max 1.4
+  return Math.min(1.0 + (combo - 1) * 0.03, 1.4);
+}
+
 export function playComboSound(soundEnabled: boolean, combo: number): void {
   const volume = getComboVolume(combo);
-  playSoundIfEnabled('combo', soundEnabled, volume);
+  const pitch = getComboPitch(combo);
+  playSoundIfEnabled('combo', soundEnabled, volume, pitch);
+}
+
+export function playClearSoundWithCombo(soundEnabled: boolean, linesCleared: number, combo: number): void {
+  const baseVolume = 0.5;
+  const bonusVolume = Math.min(linesCleared * 0.1, 0.3);
+  const pitch = getComboPitch(combo);
+  playSoundIfEnabled('clear', soundEnabled, baseVolume + bonusVolume, pitch);
 }
 
 export function playBGM(): void {

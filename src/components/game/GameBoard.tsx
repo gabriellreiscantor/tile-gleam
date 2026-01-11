@@ -19,6 +19,8 @@ interface GameBoardProps {
   clearingCells: Set<string>;
   floodingCells?: Map<string, number>;
   tutorialTargetCells?: Set<string> | null;
+  justPlacedCells?: Set<string>;
+  highlightColor?: number | null;
   onCellDrop: (x: number, y: number) => void;
   onCellHover: (x: number, y: number) => void;
   onCellLeave: () => void;
@@ -31,6 +33,8 @@ const GameBoard: React.FC<GameBoardProps> = ({
   clearingCells,
   floodingCells,
   tutorialTargetCells,
+  justPlacedCells,
+  highlightColor,
   onCellDrop,
   onCellHover,
   onCellLeave,
@@ -69,6 +73,11 @@ const GameBoard: React.FC<GameBoardProps> = ({
             const isTutorialTarget = tutorialTargetCells?.has(key) ?? false;
             const itemInCell = itemGrid?.[y]?.[x] ?? null;
             const floodColor = floodingCells?.get(key);
+            const isJustPlaced = justPlacedCells?.has(key) ?? false;
+            const isHighlighted = highlightColor !== null && highlightColor !== undefined && cell === highlightColor;
+            
+            // Calculate tile index for staggered idle animation
+            const tileIndex = y * GRID_SIZE + x;
 
             return (
               <div
@@ -89,8 +98,11 @@ const GameBoard: React.FC<GameBoardProps> = ({
                     className={cn(
                       'game-tile w-full h-full relative',
                       `tile-${cell}`,
-                      isClearing && 'clearing'
+                      isClearing && 'clearing',
+                      isJustPlaced && 'tile-just-placed',
+                      isHighlighted && 'tile-highlight'
                     )}
+                    style={{ '--tile-index': tileIndex } as React.CSSProperties}
                   >
                     {/* Item badge in top-right corner */}
                     {itemInCell && <ItemBadge itemType={itemInCell} />}

@@ -85,7 +85,7 @@ import {
   type CollectedItem,
   type ItemSessionStats,
 } from '@/lib/collectibles';
-import { preloadSounds, sounds, playBGM, stopBGM, setBGMEnabled, unlockAudioContext } from '@/lib/sounds';
+import { preloadSounds, sounds, playBGM, stopBGM, setBGMEnabled, unlockAudioContext, playClearSoundWithCombo } from '@/lib/sounds';
 import {
   type ReplayData,
   type RecorderState,
@@ -409,6 +409,11 @@ const BlockBlastGame: React.FC = () => {
   const [isFlooding, setIsFlooding] = useState(false);
   const [screenShake, setScreenShake] = useState(false);
   
+  // Block Blast polish states
+  const [justPlacedCells, setJustPlacedCells] = useState<Set<string>>(new Set());
+  const [highlightColor, setHighlightColor] = useState<number | null>(null);
+  const [comboPulse, setComboPulse] = useState<'none' | 'normal' | 'intense'>('none');
+  
   // ========== DRAG STATE (visual only) ==========
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [ghostState, setGhostState] = useState<GhostState | null>(null);
@@ -594,6 +599,20 @@ const BlockBlastGame: React.FC = () => {
       const hadClear = result.clear.linesCleared > 0;
       setLastMoveHadClear(hadClear);
       
+      // Track just placed cells for bounce animation
+      const placedCellsSet = new Set<string>();
+      for (let py = 0; py < piece.shape.length; py++) {
+        for (let px = 0; px < piece.shape[py].length; px++) {
+          if (piece.shape[py][px] === 1) {
+            placedCellsSet.add(`${gridX + px}-${gridY + py}`);
+          }
+        }
+      }
+      setJustPlacedCells(placedCellsSet);
+      // Clear after animation
+      setTimeout(() => setJustPlacedCells(new Set()), 300);
+      setLastMoveHadClear(hadClear);
+      
       // Record move for replay with cinematographic data (skip in tutorial)
       if (!tutorial.isActive) {
         recorderRef.current = recordMove(recorderRef.current, {
@@ -697,7 +716,6 @@ const BlockBlastGame: React.FC = () => {
         // Clear after animation
         setTimeout(() => setDirectionalClearLines([]), 600);
         
-        // Skip normal feedback in tutorial - the overlay handles it
         if (!tutorial.isActive) {
           const clearMsg = getClearMessage(result.clear.linesCleared);
           // Add multi-line bonus info to feedback
@@ -710,11 +728,29 @@ const BlockBlastGame: React.FC = () => {
             showFeedback(clearMsg);
           }
           
-          // Play clear/combo sound with volume scaling
+          // Play clear/combo sound with pitch scaling
           if (result.next.combo > 1) {
             sounds.combo(playerResources.soundEnabled, result.next.combo);
           } else {
-            sounds.clear(playerResources.soundEnabled, result.clear.linesCleared);
+            playClearSoundWithCombo(playerResources.soundEnabled, result.clear.linesCleared, result.next.combo);
+          }
+          
+          // Combo pulse effect for high combos
+          if (result.next.combo >= 16) {
+            setComboPulse('intense');
+          } else if (result.next.combo >= 6) {
+            setComboPulse('normal');
+          }
+          // Clear combo pulse after a short delay
+          setTimeout(() => setComboPulse('none'), 1500);
+          
+          // Highlight dominant color for "everything connected" feel
+          if (result.next.combo >= 4) {
+            const dominantColor = findDominantColor(result.next.grid);
+            if (dominantColor) {
+              setHighlightColor(dominantColor);
+              setTimeout(() => setHighlightColor(null), 800);
+            }
           }
         }
         
@@ -1280,7 +1316,9 @@ const BlockBlastGame: React.FC = () => {
           "fixed inset-0 flex flex-col items-center overflow-hidden",
           screenShake && "screen-shake",
           isTenseMode && !isDangerMode && "tension-mode",
-          isDangerMode && "danger-mode"
+          isDangerMode && "danger-mode",
+          comboPulse === 'intense' && "combo-pulse-intense",
+          comboPulse === 'normal' && "combo-pulse-active"
         )}
         style={{
           paddingTop: 'max(calc(env(safe-area-inset-top) + 100px), 120px)',
@@ -1299,6 +1337,8 @@ const BlockBlastGame: React.FC = () => {
               clearingCells={clearingCells}
               floodingCells={floodingCells}
               tutorialTargetCells={tutorialTargetCells}
+              justPlacedCells={justPlacedCells}
+              highlightColor={highlightColor}
               onCellDrop={handleCellDrop}
               onCellHover={handleCellHover}
               onCellLeave={handleCellLeave}
