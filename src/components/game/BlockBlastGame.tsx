@@ -740,6 +740,48 @@ const BlockBlastGame: React.FC = () => {
       setGameState(result.next);
       setItemGrid(newItemGrid);
       
+      // Check for Color Overload (only if no lines were cleared and not in tutorial)
+      if (!hadClear && !tutorial.isActive) {
+        // Build list of placed cells
+        const placedCells: { x: number; y: number }[] = [];
+        for (let py = 0; py < piece.shape.length; py++) {
+          for (let px = 0; px < piece.shape[py].length; px++) {
+            if (piece.shape[py][px] === 1) {
+              placedCells.push({ x: gridX + px, y: gridY + py });
+            }
+          }
+        }
+        
+        const overloadResult = checkColorOverload(result.next.grid, placedCells);
+        
+        if (overloadResult.triggered) {
+          const overloadScore = calculateOverloadScore(
+            overloadResult.allCellsToConvert.length,
+            result.next.combo
+          );
+          
+          // Trigger the animation
+          setColorOverloadActive(true);
+          setColorOverloadData({
+            dominantColor: overloadResult.dominantColor,
+            cellCount: overloadResult.allCellsToConvert.length,
+            totalPoints: overloadScore,
+          });
+          
+          // Sound and haptic
+          sounds.combo(playerResources.soundEnabled);
+          triggerHaptic('heavy');
+          
+          // Remove used piece immediately
+          const newPieces = pieces.map(p => p?.id === piece.id ? null : p);
+          setPieces(newPieces);
+          
+          setDragState(null);
+          setGhostState(null);
+          return; // Skip normal game flow - animation onComplete handles it
+        }
+      }
+      
       // Remove used piece
       const newPieces = pieces.map(p => 
         p?.id === piece.id ? null : p
@@ -1082,15 +1124,24 @@ const BlockBlastGame: React.FC = () => {
           const clearedGrid = clearAllCells(gameState.grid);
           const newScore = gameState.score + colorOverloadData.totalPoints;
           
-          setGameState(prev => ({
-            ...prev,
+          const newState = {
+            ...gameState,
             grid: clearedGrid,
             score: newScore,
-            combo: prev.combo + 1,
-          }));
+            combo: gameState.combo + 1,
+          };
+          
+          setGameState(newState);
           
           // Clear item grid too
           setItemGrid(createEmptyItemGrid());
+          
+          // Check if we need new pieces
+          const remainingPieces = pieces.filter(p => p !== null);
+          if (remainingPieces.length === 0) {
+            const freshPieces = generatePiecesWithRng(newState);
+            setPieces(freshPieces);
+          }
           
           setColorOverloadActive(false);
           setColorOverloadData(null);
