@@ -29,6 +29,8 @@ import {
   loadSessionStats,
   type ItemResources 
 } from '@/lib/collectibles';
+import { resetTutorial } from '@/lib/tutorial';
+import { resetStarTutorial, clearGameStartTime } from '@/lib/starTutorial';
 const Debug: React.FC = () => {
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
   const [particleTrigger, setParticleTrigger] = useState<{ x: number; y: number; color: string } | null>(null);
@@ -449,6 +451,51 @@ const Debug: React.FC = () => {
             }}
           >
             ⭐ Jogar com Star
+          </Button>
+        </div>
+      </Section>
+
+      {/* Tutorial Debug */}
+      <Section title="📚 TUTORIAL">
+        <p className="text-xs text-muted-foreground mb-3 text-center max-w-xs">
+          Reseta os tutoriais para testar como usuário novo
+        </p>
+        <div className="flex flex-wrap gap-2 justify-center">
+          <Button
+            variant="outline"
+            className="border-cyan-500/50 bg-cyan-500/10"
+            onClick={() => {
+              resetTutorial();
+              triggerHaptic('success');
+              window.location.href = '/';
+            }}
+          >
+            🎓 Resetar Tutorial Principal
+          </Button>
+          <Button
+            variant="outline"
+            className="border-yellow-500/50 bg-yellow-500/10"
+            onClick={() => {
+              resetStarTutorial();
+              clearGameStartTime();
+              triggerHaptic('success');
+              window.location.href = '/';
+            }}
+          >
+            ⭐ Resetar Tutorial da Estrela
+          </Button>
+          <Button
+            variant="outline"
+            className="border-green-500/50 bg-green-500/10"
+            onClick={() => {
+              resetTutorial();
+              resetStarTutorial();
+              clearGameStartTime();
+              triggerHaptic('success');
+              window.location.href = '/';
+            }}
+          >
+            🔄 Resetar TODOS Tutoriais
           </Button>
         </div>
       </Section>
