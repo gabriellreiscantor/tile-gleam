@@ -404,7 +404,6 @@ export function addCollectedItems(
 // ========================================
 
 export const CONTINUE_CRYSTAL_COST = 3;
-export const REROLL_CRYSTAL_COST = 2;
 
 export function canAffordCrystalContinue(resources: ItemResources): boolean {
   return resources.crystals >= CONTINUE_CRYSTAL_COST;
@@ -417,20 +416,6 @@ export function spendCrystalsForContinue(resources: ItemResources): ItemResource
   return {
     ...resources,
     crystals: resources.crystals - CONTINUE_CRYSTAL_COST,
-  };
-}
-
-export function canAffordReroll(resources: ItemResources): boolean {
-  return resources.crystals >= REROLL_CRYSTAL_COST;
-}
-
-export function spendCrystalsForReroll(resources: ItemResources): ItemResources {
-  if (!canAffordReroll(resources)) {
-    throw new Error('Not enough crystals for reroll');
-  }
-  return {
-    ...resources,
-    crystals: resources.crystals - REROLL_CRYSTAL_COST,
   };
 }
 

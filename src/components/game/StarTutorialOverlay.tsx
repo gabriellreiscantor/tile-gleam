@@ -34,21 +34,16 @@ const StarTutorialOverlay: React.FC<StarTutorialOverlayProps> = ({
         }}
       />
       
-      {/* Arrow pointing to star button */}
+      {/* Arrow pointing to star button - positioned to the left */}
       {starButtonRect && (
         <div 
-          className="absolute flex flex-col items-center gap-2 animate-bounce"
+          className="absolute flex items-center gap-2 animate-pulse"
           style={{
-            left: starButtonRect.left + starButtonRect.width / 2,
-            top: starButtonRect.bottom + 16,
-            transform: 'translateX(-50%)',
+            right: window.innerWidth - starButtonRect.left + 12,
+            top: starButtonRect.top + starButtonRect.height / 2,
+            transform: 'translateY(-50%)',
           }}
         >
-          {/* Arrow */}
-          <div className="text-4xl transform -rotate-90 drop-shadow-lg">
-            👆
-          </div>
-          
           {/* Hint text */}
           <div className={cn(
             "px-4 py-2 rounded-xl",
@@ -57,7 +52,12 @@ const StarTutorialOverlay: React.FC<StarTutorialOverlayProps> = ({
             "shadow-lg shadow-yellow-500/30",
             "whitespace-nowrap"
           )}>
-            Tap to activate! ⭐
+            Toque para ativar! ⭐
+          </div>
+          
+          {/* Arrow pointing right */}
+          <div className="text-3xl drop-shadow-lg animate-bounce">
+            👉
           </div>
         </div>
       )}
