@@ -36,8 +36,8 @@ const GameBoard: React.FC<GameBoardProps> = ({
   onCellLeave,
 }) => {
   // Calculate cell size to fit screen - leave room for score (~70px), piece tray (~100px), padding
-  // Use min of width-based and height-based calculations, max 48px per cell
-  const cellSize = 'min(calc((100vw - 32px) / 8.5), calc((100vh - 200px) / 8.5), 48px)';
+  // Use min of width-based and height-based calculations, max 42px per cell (reduced for iOS)
+  const cellSize = 'min(calc((100vw - 32px) / 8.5), calc((100vh - 240px) / 8.5), 42px)';
 
   const isGhostCell = (x: number, y: number): boolean => {
     if (!ghostPosition) return false;

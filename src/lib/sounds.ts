@@ -6,20 +6,20 @@ import { Capacitor } from '@capacitor/core';
 // Check if running on native platform
 const isNative = Capacitor.isNativePlatform();
 
-// Sound asset paths (for native) and URLs (for web fallback)
+// Sound asset paths (for native iOS: sounds/xxx.mp3) and URLs (for web fallback)
 const SOUND_ASSETS = {
-  click: { path: 'assets/sounds/click.mp3', url: '/assets/sounds/click.mp3' },
-  drop: { path: 'assets/sounds/drop.mp3', url: '/assets/sounds/drop.mp3' },
-  clear: { path: 'assets/sounds/clear.mp3', url: '/assets/sounds/clear.mp3' },
-  combo: { path: 'assets/sounds/combo.mp3', url: '/assets/sounds/combo.mp3' },
-  gameOver: { path: 'assets/sounds/gameover.mp3', url: '/assets/sounds/gameover.mp3' },
-  levelUp: { path: 'assets/sounds/levelup.mp3', url: '/assets/sounds/levelup.mp3' },
-  success: { path: 'assets/sounds/success.mp3', url: '/assets/sounds/success.mp3' },
-  error: { path: 'assets/sounds/error.mp3', url: '/assets/sounds/error.mp3' },
+  click: { path: 'sounds/click.mp3', url: '/assets/sounds/click.mp3' },
+  drop: { path: 'sounds/drop.mp3', url: '/assets/sounds/drop.mp3' },
+  clear: { path: 'sounds/clear.mp3', url: '/assets/sounds/clear.mp3' },
+  combo: { path: 'sounds/combo.mp3', url: '/assets/sounds/combo.mp3' },
+  gameOver: { path: 'sounds/gameover.mp3', url: '/assets/sounds/gameover.mp3' },
+  levelUp: { path: 'sounds/levelup.mp3', url: '/assets/sounds/levelup.mp3' },
+  success: { path: 'sounds/success.mp3', url: '/assets/sounds/success.mp3' },
+  error: { path: 'sounds/error.mp3', url: '/assets/sounds/error.mp3' },
 } as const;
 
 const BGM_ASSET = {
-  path: 'assets/sounds/bgm.mp3',
+  path: 'sounds/bgm.mp3',
   url: '/assets/sounds/bgm.mp3'
 };
 
