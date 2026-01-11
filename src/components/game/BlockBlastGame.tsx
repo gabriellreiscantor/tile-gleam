@@ -95,8 +95,6 @@ import {
   recordMove,
   finishRecording,
 } from '@/lib/replayRecorder';
-import { checkColorOverload, calculateOverloadScore, clearAllCells } from '@/lib/colorOverload';
-import ColorOverloadAnimation from './ColorOverloadAnimation';
 import {
   createStarTutorialState,
   advanceStarTutorial,
@@ -192,13 +190,6 @@ const BlockBlastGame: React.FC = () => {
     totalPoints: number;
   } | null>(null);
   
-  // Color Overload state
-  const [colorOverloadActive, setColorOverloadActive] = useState(false);
-  const [colorOverloadData, setColorOverloadData] = useState<{
-    dominantColor: number;
-    cellCount: number;
-    totalPoints: number;
-  } | null>(null);
   
   // Star Tutorial state
   const [starTutorial, setStarTutorial] = useState<StarTutorialState>(createStarTutorialState);
@@ -800,34 +791,6 @@ const BlockBlastGame: React.FC = () => {
           }
         }
         
-        const overloadResult = checkColorOverload(result.next.grid, placedCells);
-        
-        if (overloadResult.triggered) {
-          const overloadScore = calculateOverloadScore(
-            overloadResult.allCellsToConvert.length,
-            result.next.combo
-          );
-          
-          // Trigger the animation
-          setColorOverloadActive(true);
-          setColorOverloadData({
-            dominantColor: overloadResult.dominantColor,
-            cellCount: overloadResult.allCellsToConvert.length,
-            totalPoints: overloadScore,
-          });
-          
-          // Sound and haptic
-          sounds.combo(playerResources.soundEnabled);
-          triggerHaptic('heavy');
-          
-          // Remove used piece immediately
-          const newPieces = pieces.map(p => p?.id === piece.id ? null : p);
-          setPieces(newPieces);
-          
-          setDragState(null);
-          setGhostState(null);
-          return; // Skip normal game flow - animation onComplete handles it
-        }
       }
       
       // Remove used piece
@@ -1159,44 +1122,6 @@ const BlockBlastGame: React.FC = () => {
 
   return (
     <>
-      {/* Color Overload Animation */}
-      <ColorOverloadAnimation
-        isActive={colorOverloadActive}
-        dominantColor={colorOverloadData?.dominantColor || 1}
-        cellCount={colorOverloadData?.cellCount || 0}
-        totalPoints={colorOverloadData?.totalPoints || 0}
-        onComplete={() => {
-          if (!colorOverloadData) return;
-          
-          // Clear all cells after overload explosion
-          const clearedGrid = clearAllCells(gameState.grid);
-          const newScore = gameState.score + colorOverloadData.totalPoints;
-          
-          const newState = {
-            ...gameState,
-            grid: clearedGrid,
-            score: newScore,
-            combo: gameState.combo + 1,
-          };
-          
-          setGameState(newState);
-          
-          // Clear item grid too
-          setItemGrid(createEmptyItemGrid());
-          
-          // Check if we need new pieces
-          const remainingPieces = pieces.filter(p => p !== null);
-          if (remainingPieces.length === 0) {
-            const freshPieces = generatePiecesWithRng(newState);
-            setPieces(freshPieces);
-          }
-          
-          setColorOverloadActive(false);
-          setColorOverloadData(null);
-          
-          showFeedback({ text: 'MEGA CLEAR!', emoji: '🌟', intensity: 'epic', color: 'rainbow' });
-        }}
-      />
       
       {/* Particle effects layer */}
       <ParticleEffect trigger={particleTrigger} count={16} />
