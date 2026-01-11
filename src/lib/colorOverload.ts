@@ -1,6 +1,9 @@
 // colorOverload.ts - Color Overload Combo detection and logic
 import type { Grid, ColorId } from './gameEngine';
 
+// Minimum blocks required on grid for Color Overload to be possible
+const MIN_BLOCKS_FOR_OVERLOAD = 12;
+
 export interface OverloadResult {
   triggered: boolean;
   dominantColor: ColorId;
@@ -121,6 +124,19 @@ export function checkColorOverload(
   grid: Grid,
   _placedCells: { x: number; y: number }[]
 ): OverloadResult {
+  const totalFilled = countFilledCells(grid);
+  
+  // Need at least MIN_BLOCKS_FOR_OVERLOAD blocks for Color Overload to trigger
+  if (totalFilled < MIN_BLOCKS_FOR_OVERLOAD) {
+    return {
+      triggered: false,
+      dominantColor: 0,
+      connectedCells: [],
+      allCellsToConvert: [],
+      baseScore: 0,
+    };
+  }
+  
   const groups = findAllConnectedGroups(grid);
   
   // Check for 8+ connected blocks
