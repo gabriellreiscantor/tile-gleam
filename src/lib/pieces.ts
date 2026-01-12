@@ -61,6 +61,18 @@ export const PIECE_SHAPES: Piece[] = [
   
   // Reverse corner
   [[1, 1], [0, 1]],
+  
+  // S vertical (escada diagonal vertical)
+  [[0, 1], [1, 1], [1, 0]],
+  
+  // Z vertical (escada diagonal vertical invertida)
+  [[1, 0], [1, 1], [0, 1]],
+  
+  // L horizontal (3 horizontal + 1 embaixo esquerda)
+  [[1, 1, 1], [1, 0, 0]],
+  
+  // L horizontal invertido (3 horizontal + 1 embaixo direita)
+  [[1, 1, 1], [0, 0, 1]],
 ];
 
 // Tile colors (HSL values for the design system)
