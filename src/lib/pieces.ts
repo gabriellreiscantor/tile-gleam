@@ -73,6 +73,12 @@ export const PIECE_SHAPES: Piece[] = [
   
   // L horizontal invertido (3 horizontal + 1 embaixo direita)
   [[1, 1, 1], [0, 0, 1]],
+  
+  // L horizontal invertido verticalmente (1 em cima esquerda + 3 embaixo)
+  [[1, 0, 0], [1, 1, 1]],
+  
+  // L horizontal invertido verticalmente espelhado (1 em cima direita + 3 embaixo)
+  [[0, 0, 1], [1, 1, 1]],
 ];
 
 // Tile colors (HSL values for the design system)
