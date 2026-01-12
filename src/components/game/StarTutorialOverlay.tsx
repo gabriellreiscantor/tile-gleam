@@ -69,20 +69,6 @@ const StarTutorialOverlay: React.FC<StarTutorialOverlayProps> = ({
           </div>
         </div>
       )}
-      
-      {/* Glow effect around star button */}
-      {starButtonRect && (
-        <div 
-          className="absolute rounded-full animate-pulse pointer-events-none"
-          style={{
-            left: starButtonRect.left - 8,
-            top: starButtonRect.top - 8,
-            width: starButtonRect.width + 16,
-            height: starButtonRect.height + 16,
-            boxShadow: '0 0 20px 8px rgba(234, 179, 8, 0.5), 0 0 40px 16px rgba(234, 179, 8, 0.3)',
-          }}
-        />
-      )}
     </div>
   );
 };
