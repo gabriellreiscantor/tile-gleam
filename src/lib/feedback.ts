@@ -70,8 +70,8 @@ const CLEAR_MESSAGES: Record<number, FeedbackMessage[]> = {
     { text: 'INSAAANE!', emoji: '', intensity: 'high', color: 'green', image: clearInsane },
   ],
   4: [
-    { text: 'QUAD COMBO!!', emoji: '', intensity: 'high', color: 'cyan', image: clearQuad },
-    { text: 'MASTER!!!', emoji: '', intensity: 'high', color: 'orange', image: clearMaster },
+    { text: 'QUAD COMBO!!', emoji: '', intensity: 'epic', color: 'cyan', image: clearQuad },
+    { text: 'MASTER!!!', emoji: '', intensity: 'epic', color: 'orange', image: clearMaster },
   ],
 };
 
