@@ -44,6 +44,13 @@ const FeedbackText: React.FC<FeedbackTextProps> = ({ message, messageKey, onComp
     epic: 'text-5xl',
   };
 
+  const imageSizeClasses = {
+    low: 'h-12 md:h-14',
+    medium: 'h-16 md:h-20',
+    high: 'h-24 md:h-28',
+    epic: 'h-28 md:h-32',
+  };
+
   const colorClasses = {
     primary: 'text-primary',
     cyan: 'text-cyan-400',
@@ -89,7 +96,10 @@ const FeedbackText: React.FC<FeedbackTextProps> = ({ message, messageKey, onComp
         <img 
           src={message.image} 
           alt={message.text}
-          className="h-16 md:h-20 w-auto animate-[feedback-pop_0.4s_ease-out]"
+          className={cn(
+            imageSizeClasses[message.intensity],
+            "w-auto animate-[feedback-pop_0.4s_ease-out]"
+          )}
           style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.6))' }}
         />
       ) : (
