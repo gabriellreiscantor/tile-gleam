@@ -31,7 +31,7 @@ import {
   type ItemResources 
 } from '@/lib/collectibles';
 import { resetTutorial } from '@/lib/tutorial';
-import { resetStarTutorial, clearGameStartTime } from '@/lib/starTutorial';
+import { resetStarTutorial } from '@/lib/starTutorial';
 
 const Debug: React.FC = () => {
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
@@ -551,7 +551,6 @@ const Debug: React.FC = () => {
             className="border-yellow-500/50 bg-yellow-500/10"
             onClick={() => {
               resetStarTutorial();
-              clearGameStartTime();
               triggerHaptic('success');
               window.location.href = '/';
             }}
@@ -564,7 +563,6 @@ const Debug: React.FC = () => {
             onClick={() => {
               resetTutorial();
               resetStarTutorial();
-              clearGameStartTime();
               triggerHaptic('success');
               window.location.href = '/';
             }}

@@ -99,11 +99,9 @@ import {
 } from '@/lib/replayRecorder';
 import {
   createStarTutorialState,
-  advanceStarTutorial,
-  shouldTriggerStarTutorial,
-  recordGameStartTime,
-  getSecondsSinceGameStart,
-  clearGameStartTime,
+  shouldShowStarTutorial,
+  triggerStarTutorial,
+  completeStarTutorial,
   type StarTutorialState,
 } from '@/lib/starTutorial';
 
@@ -266,32 +264,6 @@ const BlockBlastGame: React.FC = () => {
     saveSessionStats(itemSessionStats);
   }, [itemSessionStats]);
   
-  // Star Tutorial: Track game start time and check for trigger
-  useEffect(() => {
-    if (!starTutorial.isActive || starTutorial.step !== 'waiting') return;
-    if (tutorial.isActive) return; // Wait for main tutorial to finish first
-    
-    recordGameStartTime();
-    
-    const checkTimer = setInterval(() => {
-      const seconds = getSecondsSinceGameStart();
-      
-      if (shouldTriggerStarTutorial(starTutorial, seconds)) {
-        // Give the user a star for the tutorial
-        setItemResources(prev => ({ ...prev, stars: prev.stars + 1 }));
-        
-        // Advance to show-arrow step (skip spawn/collect since we just gave them a star)
-        setStarTutorial(prev => ({ ...prev, step: 'show-arrow' }));
-        
-        sounds.success(playerResources.soundEnabled);
-        triggerHaptic('medium');
-        
-        clearInterval(checkTimer);
-      }
-    }, 1000);
-    
-    return () => clearInterval(checkTimer);
-  }, [starTutorial.isActive, starTutorial.step, tutorial.isActive, playerResources.soundEnabled]);
   
   // Debug: Force spawn item from debug page
   useEffect(() => {
@@ -777,6 +749,11 @@ const BlockBlastGame: React.FC = () => {
                   newStats = recordCrystalCollected(newStats);
                 } else if (item.type === 'star') {
                   newStats = recordStarCollected(newStats);
+                  
+                  // Trigger star tutorial on FIRST star collected
+                  if (shouldShowStarTutorial(starTutorial)) {
+                    setStarTutorial(triggerStarTutorial);
+                  }
                 }
               }
               return newStats;
@@ -1229,7 +1206,7 @@ const BlockBlastGame: React.FC = () => {
               
               // Complete star tutorial when user clicks the star
               if (starTutorial.isActive && starTutorial.step === 'show-arrow') {
-                setStarTutorial(advanceStarTutorial);
+                setStarTutorial(completeStarTutorial);
               }
               
               // FULL BOARD CLEAR - get ALL occupied cells
