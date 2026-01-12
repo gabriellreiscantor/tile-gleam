@@ -32,6 +32,26 @@ import {
 } from '@/lib/collectibles';
 import { resetTutorial } from '@/lib/tutorial';
 import { resetStarTutorial } from '@/lib/starTutorial';
+import { PIECE_SHAPES, TILE_COLORS } from '@/lib/pieces';
+
+// Mini piece visualization component
+const MiniPiece: React.FC<{ shape: number[][], colorId: number, label: string }> = ({ shape, colorId, label }) => (
+  <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col gap-0.5">
+      {shape.map((row, y) => (
+        <div key={y} className="flex gap-0.5">
+          {row.map((cell, x) => (
+            <div
+              key={x}
+              className={`w-3 h-3 rounded-sm ${cell ? `tile-${colorId}` : 'bg-transparent'}`}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+    <span className="text-[10px] text-muted-foreground">{label}</span>
+  </div>
+);
 
 const Debug: React.FC = () => {
   const [feedbackMessage, setFeedbackMessage] = useState<FeedbackMessage | null>(null);
@@ -526,6 +546,41 @@ const Debug: React.FC = () => {
           >
             📊 60% Dominância
           </Button>
+        </div>
+      </Section>
+
+      {/* All Pieces Visualization */}
+      <Section title="🧱 TODAS AS PEÇAS">
+        <p className="text-xs text-muted-foreground mb-4 text-center">
+          {PIECE_SHAPES.length} formas × {TILE_COLORS.length} cores = {PIECE_SHAPES.length * TILE_COLORS.length} combinações
+        </p>
+        
+        {/* Colors */}
+        <div className="mb-4">
+          <h4 className="text-xs font-medium mb-2 text-center">🎨 Cores ({TILE_COLORS.length})</h4>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {TILE_COLORS.map((color, i) => (
+              <div key={i} className="flex items-center gap-1">
+                <div className={`w-4 h-4 rounded tile-${i + 1}`} />
+                <span className="text-xs">{color.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* All shapes */}
+        <div>
+          <h4 className="text-xs font-medium mb-2 text-center">📐 Formas ({PIECE_SHAPES.length})</h4>
+          <div className="grid grid-cols-5 gap-4 justify-items-center">
+            {PIECE_SHAPES.map((shape, i) => (
+              <MiniPiece 
+                key={i} 
+                shape={shape} 
+                colorId={(i % 8) + 1} 
+                label={`#${i + 1}`}
+              />
+            ))}
+          </div>
         </div>
       </Section>
 
