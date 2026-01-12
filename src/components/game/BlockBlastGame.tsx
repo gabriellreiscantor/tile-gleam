@@ -631,13 +631,11 @@ const BlockBlastGame: React.FC = () => {
         }
         dominantColor = findDominantColorInClears(gridBeforeClear, clearedRows, clearedCols);
         
-        // Feedback de COMBO especial
-        showFeedback({
-          text: `COMBO x${comboMultiplier}!`,
-          emoji: '💥',
-          intensity: 'epic',
-          color: 'rainbow',
-        });
+        // Feedback de COMBO especial - usando imagens!
+        const comboMsg = getComboMessage(comboMultiplier);
+        if (comboMsg) {
+          showFeedback(comboMsg);
+        }
         
         sounds.combo(playerResources.soundEnabled, comboMultiplier);
         triggerHaptic('heavy');
