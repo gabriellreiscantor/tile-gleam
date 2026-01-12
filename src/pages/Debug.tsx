@@ -490,37 +490,29 @@ const Debug: React.FC = () => {
         <p className="text-xs text-muted-foreground mb-3 text-center max-w-xs">
           Testa a mecânica de Color Overload (8+ blocos conectados ou 60% dominância)
         </p>
-        <div className="flex flex-wrap gap-2 justify-center mb-4">
-          <Button
-            variant="outline"
-            className="border-orange-500/50 bg-orange-500/10"
-            onClick={() => {
-              setColorOverloadTestData({
-                dominantColor: 1, // Blue
-                cellCount: 12,
-                totalPoints: 680,
-              });
-              setShowColorOverload(true);
-              triggerHaptic('heavy');
-            }}
-          >
-            🎬 Ver Animação (Blue)
-          </Button>
-          <Button
-            variant="outline"
-            className="border-red-500/50 bg-red-500/10"
-            onClick={() => {
-              setColorOverloadTestData({
-                dominantColor: 2, // Red
-                cellCount: 20,
-                totalPoints: 1250,
-              });
-              setShowColorOverload(true);
-              triggerHaptic('heavy');
-            }}
-          >
-            🎬 Ver Animação (Red)
-          </Button>
+        <div className="mb-4">
+          <h4 className="text-xs font-medium mb-2 text-center">🎬 Ver Animação</h4>
+          <div className="grid grid-cols-4 gap-2">
+            {TILE_COLORS.map((colorInfo, i) => (
+              <Button
+                key={i}
+                variant="outline"
+                size="sm"
+                className={`tile-${i + 1} text-white font-medium text-xs`}
+                onClick={() => {
+                  setColorOverloadTestData({
+                    dominantColor: i + 1,
+                    cellCount: 12 + Math.floor(Math.random() * 8),
+                    totalPoints: 500 + Math.floor(Math.random() * 1000),
+                  });
+                  setShowColorOverload(true);
+                  triggerHaptic('heavy');
+                }}
+              >
+                {colorInfo.name}
+              </Button>
+            ))}
+          </div>
         </div>
         <p className="text-xs text-muted-foreground mb-3 text-center max-w-xs">
           Inicia um jogo com grid pré-montado pronto para triggar Color Overload
