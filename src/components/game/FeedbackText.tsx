@@ -85,8 +85,19 @@ const FeedbackText: React.FC<FeedbackTextProps> = ({ message, messageKey, onComp
         WebkitTextStroke: message.intensity === 'epic' ? '2px rgba(0,0,0,0.5)' : '1px rgba(0,0,0,0.4)',
       }}
     >
-      <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{message.emoji}</span>
-      <span>{message.text}</span>
+      {message.image ? (
+        <img 
+          src={message.image} 
+          alt={message.text}
+          className="h-16 md:h-20 w-auto"
+          style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.6))' }}
+        />
+      ) : (
+        <>
+          <span className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{message.emoji}</span>
+          <span>{message.text}</span>
+        </>
+      )}
     </div>
   );
 };

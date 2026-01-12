@@ -14,6 +14,7 @@ export interface FeedbackMessage {
   emoji: string;
   intensity: 'low' | 'medium' | 'high' | 'epic';
   color: string;
+  image?: string; // Optional image path for styled feedback
 }
 
 // Motivational messages based on action
@@ -23,11 +24,16 @@ const PLACE_MESSAGES: FeedbackMessage[] = [
   { text: 'Smart!', emoji: '🧠', intensity: 'low', color: 'primary' },
 ];
 
+// Import feedback images
+import clearCleaaar from '@/assets/feedback/clear-cleaaar.png';
+import clearNice from '@/assets/feedback/clear-nice.png';
+import clearBooom from '@/assets/feedback/clear-booom.png';
+
 const CLEAR_MESSAGES: Record<number, FeedbackMessage[]> = {
   1: [
-    { text: 'Clear!', emoji: '💫', intensity: 'medium', color: 'cyan' },
-    { text: 'Boom!', emoji: '💥', intensity: 'medium', color: 'cyan' },
-    { text: 'Nice!', emoji: '🎯', intensity: 'medium', color: 'cyan' },
+    { text: 'Cleaaar!', emoji: '', intensity: 'medium', color: 'cyan', image: clearCleaaar },
+    { text: 'NICE!', emoji: '', intensity: 'medium', color: 'pink', image: clearNice },
+    { text: 'BOOOM!', emoji: '', intensity: 'medium', color: 'orange', image: clearBooom },
   ],
   2: [
     { text: 'Double!', emoji: '⚡', intensity: 'high', color: 'yellow' },
