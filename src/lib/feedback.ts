@@ -106,9 +106,13 @@ const PERFECT_MESSAGE: FeedbackMessage = {
   color: 'rainbow',
 };
 
+// Import close/danger feedback images
+import closeCareful from '@/assets/feedback/close-careful.png';
+import closeTight from '@/assets/feedback/close-tight.png';
+
 const CLOSE_MESSAGES: FeedbackMessage[] = [
-  { text: 'Careful!', emoji: '😰', intensity: 'medium', color: 'destructive' },
-  { text: 'Tight!', emoji: '😬', intensity: 'medium', color: 'destructive' },
+  { text: 'Careful!', emoji: '', intensity: 'high', color: 'destructive', image: closeCareful },
+  { text: 'Tight!', emoji: '', intensity: 'high', color: 'destructive', image: closeTight },
 ];
 
 export function getRandomMessage(messages: FeedbackMessage[]): FeedbackMessage {
