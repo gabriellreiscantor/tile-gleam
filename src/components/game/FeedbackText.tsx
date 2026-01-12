@@ -47,8 +47,8 @@ const FeedbackText: React.FC<FeedbackTextProps> = ({ message, messageKey, onComp
   const imageSizeClasses = {
     low: 'h-32 md:h-40',      // Nice Place - grande
     medium: 'h-24 md:h-28',   // 1-2 lines
-    high: 'h-48 md:h-56',     // 4 lines, Careful/Tight - 3x maior!
-    epic: 'h-56 md:h-64',     // Perfect, combos épicos
+    high: 'h-28 md:h-32',     // 3 lines, Careful/Tight - normal
+    epic: 'h-48 md:h-56',     // 4 lines, Perfect, combos épicos - 3x maior!
   };
 
   const colorClasses = {
