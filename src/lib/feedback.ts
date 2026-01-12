@@ -66,12 +66,12 @@ const CLEAR_MESSAGES: Record<number, FeedbackMessage[]> = {
     { text: 'STELLAR!', emoji: '', intensity: 'medium', color: 'orange', image: clearStellar },
   ],
   3: [
-    { text: 'TRIPLE!!', emoji: '', intensity: 'medium', color: 'red', image: clearTriple },
-    { text: 'INSAAANE!', emoji: '', intensity: 'medium', color: 'green', image: clearInsane },
+    { text: 'TRIPLE!!', emoji: '', intensity: 'high', color: 'red', image: clearTriple },
+    { text: 'INSAAANE!', emoji: '', intensity: 'high', color: 'green', image: clearInsane },
   ],
   4: [
-    { text: 'QUAD COMBO!!', emoji: '', intensity: 'medium', color: 'cyan', image: clearQuad },
-    { text: 'MASTER!!!', emoji: '', intensity: 'medium', color: 'orange', image: clearMaster },
+    { text: 'QUAD COMBO!!', emoji: '', intensity: 'high', color: 'cyan', image: clearQuad },
+    { text: 'MASTER!!!', emoji: '', intensity: 'high', color: 'orange', image: clearMaster },
   ],
 };
 
