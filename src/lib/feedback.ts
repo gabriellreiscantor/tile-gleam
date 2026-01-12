@@ -40,6 +40,16 @@ import clearLegendary from '@/assets/feedback/clear-legendary.png';
 import clearQuad from '@/assets/feedback/clear-quad.png';
 import clearMaster from '@/assets/feedback/clear-master.png';
 import clearLegendary2 from '@/assets/feedback/clear-legendary2.png';
+// Import combo images
+import combo2x from '@/assets/feedback/combo-2x.png';
+import combo3x from '@/assets/feedback/combo-3x.png';
+import combo4x from '@/assets/feedback/combo-4x.png';
+import combo5x from '@/assets/feedback/combo-5x.png';
+import combo6x from '@/assets/feedback/combo-6x.png';
+import combo7x from '@/assets/feedback/combo-7x.png';
+import combo8x from '@/assets/feedback/combo-8x.png';
+import combo9x from '@/assets/feedback/combo-9x.png';
+import combo10x from '@/assets/feedback/combo-10x.png';
 
 const CLEAR_MESSAGES: Record<number, FeedbackMessage[]> = {
   1: [
@@ -65,30 +75,27 @@ const CLEAR_MESSAGES: Record<number, FeedbackMessage[]> = {
 };
 
 const COMBO_MESSAGES: Record<number, FeedbackMessage[]> = {
-  2: [{ text: 'x2 Combo!', emoji: '🔥', intensity: 'medium', color: 'accent' }],
-  3: [{ text: 'x3 Combo!', emoji: '⚡', intensity: 'high', color: 'accent' }],
-  4: [{ text: 'x4 COMBO!', emoji: '💥', intensity: 'high', color: 'orange' }],
-  5: [{ text: 'x5 MEGA!', emoji: '🌟', intensity: 'epic', color: 'yellow' }],
-  6: [{ text: 'x6 ULTRA!', emoji: '👑', intensity: 'epic', color: 'purple' }],
-  // COMBO INFINITO: Níveis adicionais
-  7: [{ text: 'x7 ULTRA!', emoji: '👑', intensity: 'epic', color: 'purple' }],
-  8: [{ text: 'x8 INSANE!', emoji: '💎', intensity: 'epic', color: 'cyan' }],
-  9: [{ text: 'x9 INSANE!', emoji: '💎', intensity: 'epic', color: 'cyan' }],
-  10: [{ text: 'x10 INSANE!', emoji: '💎', intensity: 'epic', color: 'cyan' }],
-  // 11-15: Electric
-  11: [{ text: 'x11 ⚡ELECTRIC!', emoji: '⚡', intensity: 'epic', color: 'yellow' }],
-  12: [{ text: 'x12 ⚡ELECTRIC!', emoji: '⚡', intensity: 'epic', color: 'yellow' }],
-  13: [{ text: 'x13 ⚡ELECTRIC!', emoji: '⚡', intensity: 'epic', color: 'yellow' }],
-  14: [{ text: 'x14 ⚡ELECTRIC!', emoji: '⚡', intensity: 'epic', color: 'yellow' }],
-  15: [{ text: 'x15 ⚡ELECTRIC!', emoji: '⚡', intensity: 'epic', color: 'yellow' }],
-  // 16-20: Insane
-  16: [{ text: 'x16 💥INSANE!', emoji: '💥', intensity: 'epic', color: 'pink' }],
-  17: [{ text: 'x17 💥INSANE!', emoji: '💥', intensity: 'epic', color: 'pink' }],
-  18: [{ text: 'x18 💥INSANE!', emoji: '💥', intensity: 'epic', color: 'pink' }],
-  19: [{ text: 'x19 💥INSANE!', emoji: '💥', intensity: 'epic', color: 'pink' }],
-  20: [{ text: 'x20 💥INSANE!', emoji: '💥', intensity: 'epic', color: 'pink' }],
-  // 21+: Godlike
-  21: [{ text: '👑 GODLIKE!', emoji: '👑', intensity: 'epic', color: 'rainbow' }],
+  2: [{ text: '2X COMBO!', emoji: '', intensity: 'medium', color: 'accent', image: combo2x }],
+  3: [{ text: '3X COMBO!', emoji: '', intensity: 'high', color: 'accent', image: combo3x }],
+  4: [{ text: '4X COMBO!', emoji: '', intensity: 'high', color: 'orange', image: combo4x }],
+  5: [{ text: '5X COMBO!', emoji: '', intensity: 'epic', color: 'yellow', image: combo5x }],
+  6: [{ text: '6X COMBO!', emoji: '', intensity: 'epic', color: 'purple', image: combo6x }],
+  7: [{ text: '7X COMBO!', emoji: '', intensity: 'epic', color: 'purple', image: combo7x }],
+  8: [{ text: '8X COMBO!', emoji: '', intensity: 'epic', color: 'cyan', image: combo8x }],
+  9: [{ text: '9X COMBO!', emoji: '', intensity: 'epic', color: 'cyan', image: combo9x }],
+  10: [{ text: '10X COMBO!', emoji: '', intensity: 'epic', color: 'cyan', image: combo10x }],
+  // 11+: Use 10x image as fallback
+  11: [{ text: '11X COMBO!', emoji: '⚡', intensity: 'epic', color: 'yellow', image: combo10x }],
+  12: [{ text: '12X COMBO!', emoji: '⚡', intensity: 'epic', color: 'yellow', image: combo10x }],
+  13: [{ text: '13X COMBO!', emoji: '⚡', intensity: 'epic', color: 'yellow', image: combo10x }],
+  14: [{ text: '14X COMBO!', emoji: '⚡', intensity: 'epic', color: 'yellow', image: combo10x }],
+  15: [{ text: '15X COMBO!', emoji: '⚡', intensity: 'epic', color: 'yellow', image: combo10x }],
+  16: [{ text: '16X COMBO!', emoji: '💥', intensity: 'epic', color: 'pink', image: combo10x }],
+  17: [{ text: '17X COMBO!', emoji: '💥', intensity: 'epic', color: 'pink', image: combo10x }],
+  18: [{ text: '18X COMBO!', emoji: '💥', intensity: 'epic', color: 'pink', image: combo10x }],
+  19: [{ text: '19X COMBO!', emoji: '💥', intensity: 'epic', color: 'pink', image: combo10x }],
+  20: [{ text: '20X COMBO!', emoji: '💥', intensity: 'epic', color: 'pink', image: combo10x }],
+  21: [{ text: '👑 GODLIKE!', emoji: '👑', intensity: 'epic', color: 'rainbow', image: combo10x }],
 };
 
 const PERFECT_MESSAGE: FeedbackMessage = {
