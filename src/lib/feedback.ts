@@ -17,11 +17,16 @@ export interface FeedbackMessage {
   image?: string; // Optional image path for styled feedback
 }
 
+// Import place feedback images
+import placeNice from '@/assets/feedback/place-nice.png';
+import placeGood from '@/assets/feedback/place-good.png';
+import placeSmart from '@/assets/feedback/place-smart.png';
+
 // Motivational messages based on action
 const PLACE_MESSAGES: FeedbackMessage[] = [
-  { text: 'Nice!', emoji: '👍', intensity: 'low', color: 'primary' },
-  { text: 'Good!', emoji: '✨', intensity: 'low', color: 'primary' },
-  { text: 'Smart!', emoji: '🧠', intensity: 'low', color: 'primary' },
+  { text: 'Nice!', emoji: '', intensity: 'low', color: 'primary', image: placeNice },
+  { text: 'Good!', emoji: '', intensity: 'low', color: 'primary', image: placeGood },
+  { text: 'Smart!', emoji: '', intensity: 'low', color: 'primary', image: placeSmart },
 ];
 
 // Import feedback images - Line 1
