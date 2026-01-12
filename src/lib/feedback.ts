@@ -32,6 +32,10 @@ import clearBooom from '@/assets/feedback/clear-booom.png';
 import clearDouble from '@/assets/feedback/clear-double.png';
 import clearStellar from '@/assets/feedback/clear-stellar.png';
 import clearAmazing from '@/assets/feedback/clear-amazing.png';
+// Import feedback images - Line 3
+import clearInsane from '@/assets/feedback/clear-insane.png';
+import clearTriple from '@/assets/feedback/clear-triple.png';
+import clearLegendary from '@/assets/feedback/clear-legendary.png';
 
 const CLEAR_MESSAGES: Record<number, FeedbackMessage[]> = {
   1: [
@@ -45,9 +49,9 @@ const CLEAR_MESSAGES: Record<number, FeedbackMessage[]> = {
     { text: 'STELLAR!', emoji: '', intensity: 'high', color: 'orange', image: clearStellar },
   ],
   3: [
-    { text: 'Triple!', emoji: '🚀', intensity: 'high', color: 'orange' },
-    { text: 'Insane!', emoji: '💎', intensity: 'high', color: 'orange' },
-    { text: 'Legendary!', emoji: '👑', intensity: 'high', color: 'orange' },
+    { text: 'TRIPLE!!', emoji: '', intensity: 'high', color: 'red', image: clearTriple },
+    { text: 'INSAAANE!', emoji: '', intensity: 'high', color: 'green', image: clearInsane },
+    { text: 'LEGENDARY!', emoji: '', intensity: 'high', color: 'yellow', image: clearLegendary },
   ],
   4: [
     { text: 'QUAD!', emoji: '💜', intensity: 'epic', color: 'purple' },
