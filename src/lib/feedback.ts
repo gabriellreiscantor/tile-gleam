@@ -53,6 +53,7 @@ import combo7x from '@/assets/feedback/combo-7x.png';
 import combo8x from '@/assets/feedback/combo-8x.png';
 import combo9x from '@/assets/feedback/combo-9x.png';
 import combo10x from '@/assets/feedback/combo-10x.png';
+import clearPerfect from '@/assets/feedback/clear-perfect.png';
 
 const CLEAR_MESSAGES: Record<number, FeedbackMessage[]> = {
   1: [
@@ -104,6 +105,7 @@ const PERFECT_MESSAGE: FeedbackMessage = {
   emoji: '🏆',
   intensity: 'epic',
   color: 'rainbow',
+  image: clearPerfect,
 };
 
 // Import close/danger feedback images
