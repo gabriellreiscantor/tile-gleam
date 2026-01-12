@@ -24,10 +24,14 @@ const PLACE_MESSAGES: FeedbackMessage[] = [
   { text: 'Smart!', emoji: '🧠', intensity: 'low', color: 'primary' },
 ];
 
-// Import feedback images
+// Import feedback images - Line 1
 import clearCleaaar from '@/assets/feedback/clear-cleaaar.png';
 import clearNice from '@/assets/feedback/clear-nice.png';
 import clearBooom from '@/assets/feedback/clear-booom.png';
+// Import feedback images - Line 2
+import clearDouble from '@/assets/feedback/clear-double.png';
+import clearStellar from '@/assets/feedback/clear-stellar.png';
+import clearAmazing from '@/assets/feedback/clear-amazing.png';
 
 const CLEAR_MESSAGES: Record<number, FeedbackMessage[]> = {
   1: [
@@ -36,9 +40,9 @@ const CLEAR_MESSAGES: Record<number, FeedbackMessage[]> = {
     { text: 'BOOOM!', emoji: '', intensity: 'medium', color: 'orange', image: clearBooom },
   ],
   2: [
-    { text: 'Double!', emoji: '⚡', intensity: 'high', color: 'yellow' },
-    { text: 'Amazing!', emoji: '🔥', intensity: 'high', color: 'yellow' },
-    { text: 'Stellar!', emoji: '🌟', intensity: 'high', color: 'yellow' },
+    { text: 'DOUBLE!', emoji: '', intensity: 'high', color: 'yellow', image: clearDouble },
+    { text: 'amazing!!', emoji: '', intensity: 'high', color: 'green', image: clearAmazing },
+    { text: 'STELLAR!', emoji: '', intensity: 'high', color: 'orange', image: clearStellar },
   ],
   3: [
     { text: 'Triple!', emoji: '🚀', intensity: 'high', color: 'orange' },
