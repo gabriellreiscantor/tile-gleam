@@ -35,11 +35,9 @@ import clearAmazing from '@/assets/feedback/clear-amazing.png';
 // Import feedback images - Line 3
 import clearInsane from '@/assets/feedback/clear-insane.png';
 import clearTriple from '@/assets/feedback/clear-triple.png';
-import clearLegendary from '@/assets/feedback/clear-legendary.png';
 // Import feedback images - Line 4
 import clearQuad from '@/assets/feedback/clear-quad.png';
 import clearMaster from '@/assets/feedback/clear-master.png';
-import clearLegendary2 from '@/assets/feedback/clear-legendary2.png';
 // Import combo images
 import combo2x from '@/assets/feedback/combo-2x.png';
 import combo3x from '@/assets/feedback/combo-3x.png';
@@ -58,19 +56,17 @@ const CLEAR_MESSAGES: Record<number, FeedbackMessage[]> = {
     { text: 'BOOOM!', emoji: '', intensity: 'medium', color: 'orange', image: clearBooom },
   ],
   2: [
-    { text: 'DOUBLE!', emoji: '', intensity: 'high', color: 'yellow', image: clearDouble },
-    { text: 'amazing!!', emoji: '', intensity: 'high', color: 'green', image: clearAmazing },
-    { text: 'STELLAR!', emoji: '', intensity: 'high', color: 'orange', image: clearStellar },
+    { text: 'DOUBLE!', emoji: '', intensity: 'medium', color: 'yellow', image: clearDouble },
+    { text: 'amazing!!', emoji: '', intensity: 'medium', color: 'green', image: clearAmazing },
+    { text: 'STELLAR!', emoji: '', intensity: 'medium', color: 'orange', image: clearStellar },
   ],
   3: [
-    { text: 'TRIPLE!!', emoji: '', intensity: 'high', color: 'red', image: clearTriple },
-    { text: 'INSAAANE!', emoji: '', intensity: 'high', color: 'green', image: clearInsane },
-    { text: 'LEGENDARY!', emoji: '', intensity: 'high', color: 'yellow', image: clearLegendary },
+    { text: 'TRIPLE!!', emoji: '', intensity: 'medium', color: 'red', image: clearTriple },
+    { text: 'INSAAANE!', emoji: '', intensity: 'medium', color: 'green', image: clearInsane },
   ],
   4: [
-    { text: 'QUAD COMBO!!', emoji: '', intensity: 'epic', color: 'cyan', image: clearQuad },
-    { text: 'LEGENDARY!', emoji: '', intensity: 'epic', color: 'red', image: clearLegendary2 },
-    { text: 'MASTER!!!', emoji: '', intensity: 'epic', color: 'orange', image: clearMaster },
+    { text: 'QUAD COMBO!!', emoji: '', intensity: 'medium', color: 'cyan', image: clearQuad },
+    { text: 'MASTER!!!', emoji: '', intensity: 'medium', color: 'orange', image: clearMaster },
   ],
 };
 

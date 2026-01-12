@@ -89,7 +89,7 @@ const FeedbackText: React.FC<FeedbackTextProps> = ({ message, messageKey, onComp
         <img 
           src={message.image} 
           alt={message.text}
-          className="h-16 md:h-20 w-auto"
+          className="h-16 md:h-20 w-auto animate-[feedback-pop_0.4s_ease-out]"
           style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.6))' }}
         />
       ) : (
